@@ -21,6 +21,8 @@ type Props = {
   embedded?: boolean;
   /** Parent can lock ScrollView while holding the mic */
   onListeningChange?: (listening: boolean) => void;
+  placeholder?: string;
+  hint?: string;
 };
 
 export function ChatInputBar({
@@ -30,6 +32,8 @@ export function ChatInputBar({
   disabledHint,
   embedded,
   onListeningChange,
+  placeholder,
+  hint,
 }: Props) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -73,7 +77,7 @@ export function ChatInputBar({
               ? "Connect to use AI chat"
               : listening
                 ? "Listening…"
-                : "Spent ₦4500 on fuel… or Received ₦250000 salary"
+                : placeholder || "Sold 5 shirts ₦75k POS to Mr Ade"
           }
           placeholderTextColor={colors.mistMuted}
           style={styles.input}
@@ -119,7 +123,7 @@ export function ChatInputBar({
         <Text style={styles.hint}>Release to send · hold mic to talk</Text>
       ) : (
         <Text style={styles.hint}>
-          Chat expense or income · hold mic · or switch to Manual
+          {hint || "Chat a sale, expense, or credit · hold mic to talk"}
         </Text>
       )}
     </View>

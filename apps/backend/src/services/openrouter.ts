@@ -90,7 +90,7 @@ function getClient() {
     apiKey,
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
-      "HTTP-Referer": "https://finpa.app",
+      "HTTP-Referer": "https://finpa-business.fideantech.com",
       "X-Title": "FINPA Business",
     },
   });
@@ -101,15 +101,120 @@ function buildSystemPrompt(
   categoryEnum: string[],
 ): string {
   const list = categoryEnum.join(", ");
-  return `You are FINPA Business, a business sales and expense assistant.
-Extract sales or expenses from natural language (English or Nigerian English).
-Default currency is ${preferredCurrency} when the user omits a currency. Naira/NGN is common.
-Split multi-item statements into separate items.
-Pick category from this exact list only: ${list}.
-Prefer the most specific match. If the user has a custom category that matches the spend (e.g. "School" for school fees), use that instead of "Other".
-For corrections like "change that last gas purchase to 40" or "change that school fees to School", use action "update" with a match string (keywords from the original entry) and fields to change (e.g. category). Put an empty items array for updates. Never create a new item when the user is only changing category/amount on an existing entry.
-Use action "clarify" when the message is not a transaction or correction.
-Always return valid JSON matching the schema. Keep summary short and friendly.`;
+  return `You are FINPA Business, an AI assistant for small business money tracking.
+
+Users will message you in plain English or Pidgin about:
+- SALES: "Sold 5 shirts ₦75k POS", "Made ₦180k sales today", "Customer paid ₦50k for consultancy"
+- EXPENSES: "Paid rent ₦250k", "Bought fuel ₦18k", "Paid staff salaries ₦120k"
+- DEBTORS/CREDIT: "Sold fuel ₦30k to Mr Ade, paid ₦10k, balance ₦20k", "Gave Mary credit of ₦50k for rice"
+- DAILY SUMMARY: "How much did I sell today?", "What's my profit?", "Who owes me money?"
+
+For each message, respond with a JSON object:
+{
+  "action": "create" | "clarify" | "summary",
+  "intent": "sale" | "expense" | "debtor" | "summary",
+  "summary": "One-line confirmation of what was logged",
+  "items": [
+    {
+      "amount": number,
+      "item_or_service": string,
+      "quantity": number,
+      "customer_name": string,
+      "payment_method": "cash" | "pos" | "transfer" | "credit",
+      "category": string,
+      "notes": string
+    }
+  ],
+  "debtor": {
+    "customer_name": string,
+    "total_amount": number,
+    "amount_paid": number,
+    "notes": string
+  }
+}
+
+CURRENCY: ${preferredCurrency} (Naira/₦ unless specified).
+PAYMENT METHODS: cash, POS, transfer, credit.
+CATEGORIES for expenses: ${list}.
+Default payment method: cash.
+Default category: Miscellaneous.
+Default quantity: 1.
+Use action "clarify" when the message is not a sale, expense, debtor, or summary question.
+Always return valid JSON. Keep summary short and friendly.`;
+}
+
+export type BusinessAiResult = {
+  action: "create" | "clarify" | "summary";
+  intent: "sale" | "expense" | "debtor" | "summary";
+  summary: string;
+  items: Array<{
+    amount: number;
+    item_or_service?: string;
+    quantity?: number;
+    customer_name?: string;
+    payment_method?: string;
+    category?: string;
+    notes?: string;
+  }>;
+  debtor?: {
+    customer_name: string;
+    total_amount: number;
+    amount_paid: number;
+    notes?: string;
+  };
+};
+
+function buildBusinessSchema() {
+  return {
+    name: "finpa_business_extraction",
+    strict: true,
+    schema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        action: { type: "string", enum: ["create", "clarify", "summary"] },
+        intent: { type: "string", enum: ["sale", "expense", "debtor", "summary"] },
+        summary: { type: "string" },
+        items: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              amount: { type: "number" },
+              item_or_service: { type: "string" },
+              quantity: { type: "number" },
+              customer_name: { type: "string" },
+              payment_method: {
+                type: "string",
+                enum: ["cash", "pos", "transfer", "credit"],
+              },
+              category: { type: "string" },
+              notes: { type: "string" },
+            },
+            required: ["amount", "item_or_service", "quantity", "payment_method", "notes"],
+          },
+        },
+        debtor: {
+          anyOf: [
+            {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                customer_name: { type: "string" },
+                total_amount: { type: "number" },
+                amount_paid: { type: "number" },
+                notes: { type: "string" },
+              },
+              required: ["customer_name", "total_amount", "amount_paid", "notes"],
+            },
+            { type: "null" },
+          ],
+        },
+      },
+      required: ["action", "intent", "summary", "items", "debtor"],
+    },
+  } as const;
 }
 
 async function sleep(ms: number) {
@@ -228,6 +333,95 @@ export async function extractTransactions(
     const status = (err as { status?: number })?.status;
     const messageText = err instanceof Error ? err.message : "Upstream error";
 
+    if (name === "AbortError" || messageText.toLowerCase().includes("abort")) {
+      throw new AppError(504, "UPSTREAM_TIMEOUT", "AI request timed out. Try again.");
+    }
+    if (status === 429) {
+      throw new AppError(
+        503,
+        "RATE_LIMIT",
+        "Free-tier rate limit reached. Wait a moment and try again.",
+      );
+    }
+    throw new AppError(502, "INTERNAL", messageText);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function extractBusinessChat(
+  message: string,
+  preferredCurrency: CurrencyCode,
+  categories: string[] = [],
+): Promise<BusinessAiResult> {
+  const categoryEnum = buildCategoryEnum(categories);
+  const schema = buildBusinessSchema();
+  const client = getClient();
+  const model = resolveOpenRouterModel();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
+  const messages = [
+    {
+      role: "system" as const,
+      content: buildSystemPrompt(preferredCurrency, categoryEnum),
+    },
+    { role: "user" as const, content: message },
+  ];
+
+  const run = async (withSchema: boolean) =>
+    client.chat.completions.create(
+      {
+        model,
+        temperature: 0.1,
+        messages,
+        ...(withSchema
+          ? {
+              response_format: {
+                type: "json_schema" as const,
+                json_schema: schema as unknown as {
+                  name: string;
+                  strict?: boolean;
+                  schema: Record<string, unknown>;
+                },
+              },
+            }
+          : { response_format: { type: "json_object" as const } }),
+      },
+      { signal: controller.signal },
+    );
+
+  try {
+    let completion;
+    try {
+      completion = await run(true);
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      if (status === 429) {
+        await sleep(1200);
+        completion = await run(true);
+      } else {
+        completion = await run(false);
+      }
+    }
+    const content = completion.choices[0]?.message?.content;
+    if (!content) throw new AppError(422, "PARSE_FAILED", "Empty response from AI");
+    let parsed: BusinessAiResult;
+    try {
+      parsed = JSON.parse(content) as BusinessAiResult;
+    } catch {
+      throw new AppError(422, "PARSE_FAILED", "AI returned invalid JSON");
+    }
+    if (!parsed.action || !parsed.summary) {
+      throw new AppError(422, "PARSE_FAILED", "AI response missing required fields");
+    }
+    parsed.items = Array.isArray(parsed.items) ? parsed.items : [];
+    parsed.intent = parsed.intent || "sale";
+    return parsed;
+  } catch (err: unknown) {
+    if (err instanceof AppError) throw err;
+    const name = (err as { name?: string })?.name;
+    const status = (err as { status?: number })?.status;
+    const messageText = err instanceof Error ? err.message : "Upstream error";
     if (name === "AbortError" || messageText.toLowerCase().includes("abort")) {
       throw new AppError(504, "UPSTREAM_TIMEOUT", "AI request timed out. Try again.");
     }

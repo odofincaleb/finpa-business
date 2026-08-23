@@ -313,3 +313,23 @@ export async function markDebtorPaidApi(token: string, debtor: Debtor) {
     },
   );
 }
+
+export type BusinessChatResponse = {
+  ok: boolean;
+  action: string;
+  intent?: string;
+  summary: string;
+  sale?: Sale | null;
+  sales?: Sale[];
+  expense?: Expense | null;
+  expenses?: Expense[];
+  debtor?: Debtor | null;
+};
+
+export async function sendBusinessChat(token: string, message: string, categories: string[] = []) {
+  return request<BusinessChatResponse>("/api/business/chat", {
+    method: "POST",
+    token,
+    body: JSON.stringify({ message, categories }),
+  });
+}

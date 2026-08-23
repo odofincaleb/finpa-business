@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,12 +7,46 @@ import { BookOpen, Lightbulb, Settings, Users } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { BrandMark } from "../components/BrandMark";
+import { ChatInputBar } from "../components/ChatInputBar";
 import { useAuth } from "../context/AuthContext";
 import { useBusiness } from "../context/BusinessContext";
 import { useTheme } from "../context/ThemeContext";
+import { useBusinessChat } from "../hooks/useBusinessChat";
 import { formatMoney } from "../lib/currency";
+import type { Debtor } from "../types";
 import type { ThemeColors } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
+
+const SALE_AMBER = "#E3B341";
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+
+function dueLabel(dueDate: string | null): string {
+  if (!dueDate) return "";
+  const due = startOfDay(new Date(dueDate));
+  const today = startOfDay(new Date());
+  const days = Math.round((due - today) / 86_400_000);
+  if (days < 0) {
+    const n = Math.abs(days);
+    return `overdue ${n} day${n === 1 ? "" : "s"}`;
+  }
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow";
+  return `due in ${days} days`;
+}
+
+function sortOpenDebtors(debtors: Debtor[]) {
+  return [...debtors]
+    .filter((d) => d.status !== "paid")
+    .sort((a, b) => {
+      const aDue = a.due_date ? startOfDay(new Date(a.due_date)) : Number.MAX_SAFE_INTEGER;
+      const bDue = b.due_date ? startOfDay(new Date(b.due_date)) : Number.MAX_SAFE_INTEGER;
+      if (aDue !== bDue) return aDue - bDue;
+      return b.balance - a.balance;
+    });
+}
 
 export function HomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -20,13 +54,33 @@ export function HomeScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { profile } = useAuth();
   const { dashboard, weekly, debtors, syncStatusLine, flushSyncQueue, business } = useBusiness();
+  const { send, sending } = useBusinessChat();
+  const [toast, setToast] = useState<{ ok: boolean; text: string } | null>(null);
   const currency = profile?.preferred_currency ?? "NGN";
-  const openDebtors = debtors.filter((d) => d.status !== "paid");
+  const openDebtors = sortOpenDebtors(debtors);
+  const openTotal = openDebtors.reduce((sum, d) => sum + d.balance, 0);
   const profitColor = dashboard.estimatedProfit >= 0 ? colors.income : colors.danger;
-  const trend =
-    weekly.todaySales > 0
-      ? Math.round(((dashboard.todaySales - weekly.todaySales / 7) / (weekly.todaySales / 7 || 1)) * 100)
-      : 0;
+  const avgProfit = weekly.estimatedProfit / 7;
+  const todayProfit = dashboard.estimatedProfit;
+  let trendLabel = "";
+  if (avgProfit !== 0) {
+    const pct = Math.round(((todayProfit - avgProfit) / Math.abs(avgProfit)) * 100);
+    if (pct > 0) trendLabel = `🔺 ${pct}% above average`;
+    else if (pct < 0) trendLabel = `🔻 ${Math.abs(pct)}% below average`;
+  } else if (todayProfit > 0) {
+    trendLabel = "🔺 above average";
+  }
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  const onChat = async (message: string) => {
+    const result = await send(message);
+    setToast({ ok: result.ok, text: result.summary });
+  };
 
   return (
     <LinearGradient colors={colors.gradient} style={styles.root}>
@@ -49,7 +103,10 @@ export function HomeScreen() {
             </Pressable>
           </View>
         </View>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
           <Text style={styles.biz}>{business?.business_name || "Your business"}</Text>
           {syncStatusLine ? (
             <Pressable onPress={() => void flushSyncQueue()}>
@@ -57,12 +114,22 @@ export function HomeScreen() {
             </Pressable>
           ) : null}
 
+          <ChatInputBar
+            embedded
+            sending={sending}
+            onSend={(message) => void onChat(message)}
+          />
+          {toast ? (
+            <View style={[styles.toast, !toast.ok && styles.toastError]}>
+              <Text style={styles.toastText}>{toast.text}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.card}>
             <Text style={styles.label}>Today&apos;s sales</Text>
             <Text style={styles.hero}>{formatMoney(dashboard.todaySales, currency)}</Text>
             <Text style={styles.meta}>
               {dashboard.salesCount} sale{dashboard.salesCount === 1 ? "" : "s"}
-              {trend ? ` · ${trend > 0 ? "+" : ""}${trend}% vs daily avg` : ""}
             </Text>
           </View>
           <View style={styles.row}>
@@ -77,29 +144,41 @@ export function HomeScreen() {
               <Text style={[styles.mid, { color: profitColor }]}>
                 {formatMoney(dashboard.estimatedProfit, currency)}
               </Text>
+              {trendLabel ? <Text style={styles.trend}>{trendLabel}</Text> : null}
             </View>
           </View>
 
           <View style={styles.actions}>
             <Pressable style={styles.primary} onPress={() => navigation.navigate("AddSale")}>
-              <Text style={styles.primaryText}>Record sale</Text>
+              <Text style={styles.primaryText}>💰 Record Sale</Text>
             </Pressable>
             <Pressable style={styles.secondary} onPress={() => navigation.navigate("AddExpense")}>
-              <Text style={styles.secondaryText}>Record expense</Text>
+              <Text style={styles.secondaryText}>📊 Record Expense</Text>
             </Pressable>
           </View>
 
           {openDebtors.length > 0 ? (
             <Pressable style={styles.alert} onPress={() => navigation.navigate("Debtors")}>
               <Text style={styles.alertText}>
-                {openDebtors.length} open debtor{openDebtors.length === 1 ? "" : "s"} — tap to collect
+                ⚠️  {openDebtors.length} open debtor{openDebtors.length === 1 ? "" : "s"} ·{" "}
+                {formatMoney(openTotal, currency)} total
               </Text>
+              {openDebtors.slice(0, 3).map((d) => {
+                const due = dueLabel(d.due_date);
+                return (
+                  <Text key={d.id} style={styles.alertRow}>
+                    {d.customer_name} — {formatMoney(d.balance, currency)}
+                    {due ? ` ${due}` : ""}
+                  </Text>
+                );
+              })}
+              <Text style={styles.alertLink}>→ Tap to view all</Text>
             </Pressable>
           ) : null}
 
           <Text style={styles.section}>Recent</Text>
           {dashboard.recentTransactions.length === 0 ? (
-            <Text style={styles.empty}>No sales or expenses yet. Record your first one.</Text>
+            <Text style={styles.empty}>No sales or expenses yet. Try: Sold 5 shirts ₦75k POS</Text>
           ) : (
             dashboard.recentTransactions.map((item) => (
               <View key={`${item.kind}-${item.id}`} style={styles.tx}>
@@ -150,6 +229,19 @@ function createStyles(c: ThemeColors) {
     content: { padding: 16, paddingBottom: 48, gap: 12 },
     biz: { color: c.mistMuted, fontFamily: "DMSans_500Medium", fontSize: 14 },
     sync: { color: c.sageBright, fontFamily: "DMSans_400Regular", fontSize: 13 },
+    toast: {
+      backgroundColor: c.warnBg,
+      borderColor: c.warnBorder,
+      borderWidth: 1,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    toastError: {
+      backgroundColor: c.overBg,
+      borderColor: c.overBorder,
+    },
+    toastText: { color: c.mist, fontFamily: "DMSans_500Medium", fontSize: 13 },
     card: {
       backgroundColor: c.inkCard,
       borderRadius: 18,
@@ -163,33 +255,37 @@ function createStyles(c: ThemeColors) {
     hero: { color: c.mist, fontFamily: "Fraunces_600SemiBold", fontSize: 36, marginTop: 4 },
     mid: { fontFamily: "Fraunces_600SemiBold", fontSize: 24, marginTop: 6 },
     meta: { color: c.mistMuted, marginTop: 6, fontFamily: "DMSans_400Regular" },
+    trend: { color: c.mistMuted, marginTop: 6, fontFamily: "DMSans_500Medium", fontSize: 12 },
     actions: { flexDirection: "row", gap: 10, marginTop: 4 },
     primary: {
       flex: 1,
-      backgroundColor: c.teal,
+      backgroundColor: SALE_AMBER,
       borderRadius: 14,
-      paddingVertical: 14,
+      paddingVertical: 16,
       alignItems: "center",
     },
-    primaryText: { color: "#fff", fontFamily: "DMSans_700Bold" },
+    primaryText: { color: "#0B1210", fontFamily: "DMSans_700Bold", fontSize: 15 },
     secondary: {
       flex: 1,
       backgroundColor: c.inkCard,
       borderRadius: 14,
-      paddingVertical: 14,
+      paddingVertical: 16,
       alignItems: "center",
       borderWidth: 1,
       borderColor: c.line,
     },
-    secondaryText: { color: c.mist, fontFamily: "DMSans_700Bold" },
+    secondaryText: { color: c.mist, fontFamily: "DMSans_700Bold", fontSize: 15 },
     alert: {
       backgroundColor: c.warnBg,
       borderColor: c.warnBorder,
       borderWidth: 1,
       borderRadius: 14,
       padding: 12,
+      gap: 4,
     },
-    alertText: { color: c.mist, fontFamily: "DMSans_500Medium" },
+    alertText: { color: c.mist, fontFamily: "DMSans_700Bold", fontSize: 14 },
+    alertRow: { color: c.mist, fontFamily: "DMSans_400Regular", fontSize: 13, marginTop: 2 },
+    alertLink: { color: c.sageBright, fontFamily: "DMSans_500Medium", fontSize: 13, marginTop: 6 },
     section: {
       color: c.mist,
       fontFamily: "Fraunces_600SemiBold",

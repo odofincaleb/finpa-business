@@ -50,14 +50,14 @@ export function AddExpenseScreen() {
       Alert.alert("Could not parse", "Try: Paid rent ₦250,000");
       return;
     }
-    if (parsed.kind === "expense") {
-      setAmount(String(parsed.amount));
-      setCategory(parsed.category);
-      setMethod(parsed.payment_method === "credit" ? "cash" : parsed.payment_method);
-      setNote(parsed.notes);
-    } else {
-      setAmount(String(parsed.amount));
+    if (parsed.kind !== "expense") {
+      Alert.alert("Could not parse", "Try: Paid rent ₦250,000");
+      return;
     }
+    setAmount(String(parsed.amount));
+    setCategory(parsed.category);
+    setMethod(parsed.payment_method === "credit" ? "cash" : parsed.payment_method);
+    setNote(parsed.notes);
   };
 
   const submit = async () => {

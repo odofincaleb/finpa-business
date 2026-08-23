@@ -10,6 +10,7 @@ import salesRouter from "./routes/sales.routes";
 import expensesRouter from "./routes/expenses.routes";
 import debtorsRouter from "./routes/debtors.routes";
 import dashboardRouter from "./routes/dashboard.routes";
+import chatRouter from "./routes/chat.routes";
 import { AppError } from "./lib/errors";
 import { hasSupabase } from "./lib/supabase";
 import { hasDatabase } from "./lib/pg";
@@ -52,6 +53,7 @@ export function createApp() {
   app.use("/api/admin/pins", adminPinsRoutes);
   app.use("/api/checkout", checkoutRoutes);
   app.use("/api/business/profile", businessRouter);
+  app.use("/api/business/chat", chatRouter);
   app.use("/api/business/sales", salesRouter);
   app.use("/api/business/expenses", expensesRouter);
   app.use("/api/business/debtors", debtorsRouter);

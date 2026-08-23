@@ -5,7 +5,7 @@ import { chatExpenseLimiter } from "../middleware/rateLimit";
 import { extractTransactions } from "../services/openrouter";
 import { createExpense, createSale, getBusinessProfile } from "../services/database";
 import { AppError } from "../lib/errors";
-import { parseExpenseLocally } from "../lib/localParse";
+import { parseBusinessMessage, parseExpenseLocally } from "../lib/localParse";
 import type { AiChatResult, CurrencyCode } from "../types/transaction";
 
 const router = Router();
@@ -40,11 +40,31 @@ router.post(
 
       const currency = profile.preferred_currency as CurrencyCode;
       const categories = parsed.data.categories ?? [];
-      const looksLikeSale = /\b(sold|sale|sales|received from)\b/i.test(parsed.data.message);
+      const business = parseBusinessMessage(parsed.data.message);
+      const looksLikeSale =
+        business?.intent === "sale" ||
+        business?.intent === "debtor" ||
+        /\b(sold|sale|sales|received from)\b/i.test(parsed.data.message);
 
       let ai: AiChatResult;
       try {
-        ai = await extractTransactions(parsed.data.message, currency, categories);
+        if (business) {
+          ai = {
+            action: "create",
+            summary: business.summary,
+            items: business.items.map((item) => ({
+              amount: item.amount,
+              currency,
+              category: item.category || item.item_or_service || "Other",
+              merchant: item.customer_name || item.item_or_service || "Unknown",
+              type: business.intent === "expense" ? "expense" : "income",
+              payment_method: item.payment_method || "",
+              notes: item.notes,
+            })),
+          };
+        } else {
+          ai = await extractTransactions(parsed.data.message, currency, categories);
+        }
       } catch (aiErr) {
         const local = parseExpenseLocally(parsed.data.message, currency, categories);
         if (!local) throw aiErr;
