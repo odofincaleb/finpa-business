@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { AppError } from "../lib/errors";
 import { createPaystackPinSale, getPaystackPinSaleByReference, updatePaystackPinSaleEmailStatus, type PinSale } from "./database";
 
-export type FinpaPaystackPlanId =
+export type BusinessPaystackPlanId =
   | "monthly_ngn"
   | "annual_ngn"
   | "launch_annual_ngn"
@@ -10,8 +10,8 @@ export type FinpaPaystackPlanId =
   | "annual_usd"
   | "launch_annual_usd";
 
-export type FinpaPaystackPlan = {
-  id: FinpaPaystackPlanId;
+export type BusinessPaystackPlan = {
+  id: BusinessPaystackPlanId;
   label: string;
   period: "monthly" | "annual";
   durationDays: number;
@@ -19,56 +19,59 @@ export type FinpaPaystackPlan = {
   amountSubunits: number;
 };
 
-export const FINPA_PAYSTACK_PLANS: Record<FinpaPaystackPlanId, FinpaPaystackPlan> = {
+export const BUSINESS_PAYSTACK_PLANS: Record<BusinessPaystackPlanId, BusinessPaystackPlan> = {
   monthly_ngn: {
     id: "monthly_ngn",
-    label: "FINPA Monthly Starter",
+    label: "FINPA Business Monthly",
     period: "monthly",
     durationDays: 30,
     currency: "NGN",
-    amountSubunits: 200_000,
+    amountSubunits: 300_000,
   },
   annual_ngn: {
     id: "annual_ngn",
-    label: "FINPA Annual Best Value",
+    label: "FINPA Business Annual",
     period: "annual",
     durationDays: 365,
     currency: "NGN",
-    amountSubunits: 1_500_000,
+    amountSubunits: 2_500_000,
   },
   launch_annual_ngn: {
     id: "launch_annual_ngn",
-    label: "FINPA Launch Annual Promo",
+    label: "FINPA Business Launch Annual Promo",
     period: "annual",
     durationDays: 365,
     currency: "NGN",
-    amountSubunits: 1_200_000,
+    amountSubunits: 2_000_000,
   },
   monthly_usd: {
     id: "monthly_usd",
-    label: "FINPA USD Monthly",
+    label: "FINPA Business USD Monthly",
     period: "monthly",
     durationDays: 30,
     currency: "USD",
-    amountSubunits: 499,
+    amountSubunits: 699,
   },
   annual_usd: {
     id: "annual_usd",
-    label: "FINPA USD Annual",
+    label: "FINPA Business USD Annual",
     period: "annual",
     durationDays: 365,
     currency: "USD",
-    amountSubunits: 3_900,
+    amountSubunits: 5_900,
   },
   launch_annual_usd: {
     id: "launch_annual_usd",
-    label: "FINPA USD Launch Annual Promo",
+    label: "FINPA Business USD Launch Annual Promo",
     period: "annual",
     durationDays: 365,
     currency: "USD",
-    amountSubunits: 2_900,
+    amountSubunits: 4_900,
   },
 };
+
+export const BUSINESS_PLAN_IDS = Object.keys(BUSINESS_PAYSTACK_PLANS) as BusinessPaystackPlanId[];
+export const BUSINESS_PRODUCT = "finpa-business";
 
 export type PaystackInitializeRequest = {
   email: string;
@@ -103,9 +106,9 @@ export type CheckoutRequest = {
   callbackUrl?: string;
 };
 
-function getPlan(planId: string): FinpaPaystackPlan {
-  const plan = FINPA_PAYSTACK_PLANS[planId as FinpaPaystackPlanId];
-  if (!plan) throw new AppError(400, "INVALID_PLAN", "Unknown FINPA checkout plan");
+function getPlan(planId: string): BusinessPaystackPlan {
+  const plan = BUSINESS_PAYSTACK_PLANS[planId as BusinessPaystackPlanId];
+  if (!plan) throw new AppError(400, "INVALID_PLAN", "Unknown FINPA Business checkout plan");
   return plan;
 }
 
@@ -117,7 +120,7 @@ function normalizeEmail(email: string): string {
   return out;
 }
 
-function makeReference(planId: FinpaPaystackPlanId): string {
+function makeReference(planId: BusinessPaystackPlanId): string {
   return `finpa_${planId}_${Date.now()}_${crypto.randomBytes(6).toString("hex")}`;
 }
 
@@ -137,7 +140,7 @@ export async function initializePaystackCheckout(
     reference,
     callback_url: callbackUrl,
     metadata: {
-      product: "finpa",
+      product: BUSINESS_PRODUCT,
       plan_id: plan.id,
       period: plan.period,
       duration_days: plan.durationDays,
@@ -224,9 +227,9 @@ async function deliverPinEmail(sale: PinSale): Promise<"sent" | "pending" | "fai
       // Redirect: "follow" strips custom headers on Apps Script; also send secret in body.
       redirect: "follow",
       body: JSON.stringify({
-        product: "finpa",
+        product: BUSINESS_PRODUCT,
         to: sale.buyer_email,
-        subject: "Your FINPA activation PIN",
+        subject: "Your FINPA Business activation PIN",
         pin: sale.pin_code,
         plan_id: sale.plan_id,
         period: sale.period,
@@ -265,8 +268,8 @@ export async function processVerifiedPaystackPurchase(
   if (tx.status !== "success") throw new AppError(400, "PAYMENT_NOT_SUCCESSFUL", "Payment is not successful");
   if (tx.reference !== reference) throw new AppError(400, "PAYMENT_REFERENCE_MISMATCH", "Payment reference mismatch");
   const plan = getPlan(metadataString(tx.metadata, "plan_id"));
-  if (metadataString(tx.metadata, "product") !== "finpa") {
-    throw new AppError(400, "PAYMENT_PRODUCT_MISMATCH", "Payment is not for FINPA");
+  if (metadataString(tx.metadata, "product") !== BUSINESS_PRODUCT) {
+    throw new AppError(400, "PAYMENT_PRODUCT_MISMATCH", "Payment is not for FINPA Business");
   }
   if (Number(tx.amount) !== plan.amountSubunits || String(tx.currency).toUpperCase() !== plan.currency) {
     throw new AppError(400, "PAYMENT_AMOUNT_MISMATCH", "Payment amount or currency mismatch");

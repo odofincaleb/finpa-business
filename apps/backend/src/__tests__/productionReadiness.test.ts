@@ -39,7 +39,7 @@ describe("secure PIN generation", () => {
   it("uses crypto-secure alphanumeric chunks", () => {
     const chunk = randomPinChunk(4);
     expect(chunk).toMatch(/^[A-Z2-9]{4}$/);
-    expect(generateActivationCode()).toMatch(/^FINPA-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(generateActivationCode()).toMatch(/^BUS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
   });
 
   it("does not use Math.random in generated codes uniqueness sample", () => {
@@ -83,7 +83,7 @@ describe("ALLOW_DEMO_PINS", () => {
   it("rejects demo PIN redeem when disabled", async () => {
     delete process.env.ALLOW_DEMO_PINS;
     memorySeedDemoPin();
-    await expect(redeemPin("user-1", "FINPA-DEMO-0001")).rejects.toMatchObject({
+    await expect(redeemPin("user-1", "BUS-DEMO-0001")).rejects.toMatchObject({
       code: "PIN_INVALID",
     });
   });
@@ -91,14 +91,15 @@ describe("ALLOW_DEMO_PINS", () => {
   it("allows demo PIN redeem when enabled in memory mode", () => {
     process.env.ALLOW_DEMO_PINS = "true";
     memorySeedDemoPin();
-    const profile = memoryRedeemPin("user-demo", "FINPA-DEMO-0001");
+    const profile = memoryRedeemPin("user-demo", "BUS-DEMO-0001");
     expect(profile.subscription_period).toBe("monthly");
     expect(profile.subscription_expires_at).toBeTruthy();
   });
 
   it("identifies demo codes", () => {
+    expect(isDemoPinCode("bus-demo-0001")).toBe(true);
     expect(isDemoPinCode("finpa-demo-0001")).toBe(true);
-    expect(isDemoPinCode("FINPA-ABCD-EFGH")).toBe(false);
+    expect(isDemoPinCode("BUS-ABCD-EFGH")).toBe(false);
   });
 });
 
@@ -129,7 +130,7 @@ describe("OpenRouter free-model enforcement", () => {
 describe("memory PIN create + redeem", () => {
   it("creates crypto-format pins and redeems once", () => {
     const [pin] = memoryCreatePins("monthly", 1, "test");
-    expect(pin.code).toMatch(/^FINPA-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
+    expect(pin.code).toMatch(/^BUS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/);
     const profile = memoryRedeemPin("u1", pin.code);
     expect(profile.subscription_period).toBe("monthly");
     expect(() => memoryRedeemPin("u2", pin.code)).toThrow("PIN_INVALID");
@@ -142,7 +143,7 @@ describe("rate limiting middleware is mounted", () => {
   it("PIN redeem route returns 401 without auth (limiter allows request)", async () => {
     const res = await request(app)
       .post("/api/pins/redeem")
-      .send({ code: "FINPA-AAAA-BBBB" });
+      .send({ code: "BUS-AAAA-BBBB" });
     expect(res.status).toBe(401);
   });
 });

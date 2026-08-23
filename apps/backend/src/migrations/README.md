@@ -17,6 +17,7 @@ psql -U finpa_business_admin -d finpa_business_prod -f apps/backend/src/migratio
 psql -U finpa_business_admin -d finpa_business_prod -f apps/backend/src/migrations/002_pin_sales.sql
 psql -U finpa_business_admin -d finpa_business_prod -f apps/backend/src/migrations/003_profiles.sql
 psql -U finpa_business_admin -d finpa_business_prod -f apps/backend/src/migrations/004_activation_pins.sql
+psql -U finpa_business_admin -d finpa_business_prod -f apps/backend/src/migrations/005_bus_demo_pin.sql
 
 # Repeat for finpa_business_staging
 

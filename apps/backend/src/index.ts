@@ -31,7 +31,7 @@ app.listen(port, "0.0.0.0", () => {
       "[finpa-business] DATABASE_URL/Supabase data not configured — using in-memory store. Auth: Bearer dev:<userId>:<email>",
     );
     if (allowDemoPins()) {
-      console.warn("[finpa-business] Demo PIN (memory mode): FINPA-DEMO-0001");
+      console.warn("[finpa-business] Demo PIN (memory mode): BUS-DEMO-0001");
     } else {
       console.warn(
         "[finpa-business] Demo PINs disabled (ALLOW_DEMO_PINS!=true). Generate PINs via admin API.",

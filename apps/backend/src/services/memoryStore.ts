@@ -3,6 +3,7 @@ import { memoryResetBusiness } from "./memoryBusiness";
 import { findMatchingTransaction } from "../lib/matchTransaction";
 import {
   allowDemoPins,
+  DEMO_PIN_CODE,
   generateActivationCode,
   isDemoPinCode,
 } from "../lib/securePin";
@@ -329,9 +330,9 @@ export function memoryDeletePin(code: string): void {
 /** Seed a known demo PIN for local Expo Go review (memory mode only). */
 export function memorySeedDemoPin() {
   if (!allowDemoPins()) return;
-  if (!pins.has("FINPA-DEMO-0001")) {
-    pins.set("FINPA-DEMO-0001", {
-      code: "FINPA-DEMO-0001",
+  if (!pins.has(DEMO_PIN_CODE)) {
+    pins.set(DEMO_PIN_CODE, {
+      code: DEMO_PIN_CODE,
       period: "monthly",
       duration_days: 30,
       redeemed_by: null,

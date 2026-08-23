@@ -103,7 +103,7 @@ router.get("/paystack/success", async (req, res, next) => {
         renderPaystackFailurePage({
           title: "We could not verify this payment",
           message:
-            "This Paystack reference is invalid, expired, unpaid, or not linked to a FINPA purchase. If you were debited, contact Fidean support with the reference below.",
+            "This Paystack reference is invalid, expired, unpaid, or not linked to a FINPA Business purchase. If you were debited, contact Fidean support with the reference below.",
           reference,
           supportCode: err.code,
         }),

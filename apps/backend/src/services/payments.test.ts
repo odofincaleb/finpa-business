@@ -1,5 +1,5 @@
 import {
-  FINPA_PAYSTACK_PLANS,
+  BUSINESS_PAYSTACK_PLANS,
   initializePaystackCheckout,
   processVerifiedPaystackPurchase,
   verifyFinpaRouterSecret,
@@ -12,7 +12,7 @@ import {
   renderPaystackSuccessPage,
 } from "../lib/paystackSuccessPage";
 
-const PIN_RE = /^FINPA-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
+const PIN_RE = /^BUS-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}$/;
 
 beforeEach(() => {
   delete process.env.PAYSTACK_SECRET_KEY;
@@ -23,13 +23,13 @@ beforeEach(() => {
   memoryResetForTests();
 });
 
-test("FINPA Paystack plans map approved NGN and USD amounts in subunits", () => {
-  expect(FINPA_PAYSTACK_PLANS.monthly_ngn.amountSubunits).toBe(200000);
-  expect(FINPA_PAYSTACK_PLANS.annual_ngn.amountSubunits).toBe(1500000);
-  expect(FINPA_PAYSTACK_PLANS.launch_annual_ngn.amountSubunits).toBe(1200000);
-  expect(FINPA_PAYSTACK_PLANS.monthly_usd.amountSubunits).toBe(499);
-  expect(FINPA_PAYSTACK_PLANS.annual_usd.amountSubunits).toBe(3900);
-  expect(FINPA_PAYSTACK_PLANS.launch_annual_usd.amountSubunits).toBe(2900);
+test("FINPA Business Paystack plans map approved NGN and USD amounts in subunits", () => {
+  expect(BUSINESS_PAYSTACK_PLANS.monthly_ngn.amountSubunits).toBe(300000);
+  expect(BUSINESS_PAYSTACK_PLANS.annual_ngn.amountSubunits).toBe(2500000);
+  expect(BUSINESS_PAYSTACK_PLANS.launch_annual_ngn.amountSubunits).toBe(2000000);
+  expect(BUSINESS_PAYSTACK_PLANS.monthly_usd.amountSubunits).toBe(699);
+  expect(BUSINESS_PAYSTACK_PLANS.annual_usd.amountSubunits).toBe(5900);
+  expect(BUSINESS_PAYSTACK_PLANS.launch_annual_usd.amountSubunits).toBe(4900);
 });
 
 test("initializePaystackCheckout validates plan server-side and sends exact Paystack payload", async () => {
@@ -52,16 +52,16 @@ test("initializePaystackCheckout validates plan server-side and sends exact Pays
   );
 
   expect(checkout.currency).toBe("USD");
-  expect(checkout.amountSubunits).toBe(2900);
+  expect(checkout.amountSubunits).toBe(4900);
   expect(checkout.reference).toMatch(/^finpa_launch_annual_usd_/);
   expect(payload).toEqual({
     email: "buyer@example.com",
-    amount: 2900,
+    amount: 4900,
     currency: "USD",
     reference: checkout.reference,
     callback_url: undefined,
     metadata: {
-      product: "finpa",
+      product: "finpa-business",
       plan_id: "launch_annual_usd",
       period: "annual",
       duration_days: 365,
@@ -75,11 +75,11 @@ test("verified Paystack purchase creates one sold PIN visible in admin inventory
   const sale = await processVerifiedPaystackPurchase("finpa_ref_001", async () => ({
     status: "success",
     reference: "finpa_ref_001",
-    amount: 200000,
+    amount: 300000,
     currency: "NGN",
     customer: { email: "buyer@example.com" },
     metadata: {
-      product: "finpa",
+      product: "finpa-business",
       plan_id: "monthly_ngn",
       buyer_name: "Buyer One",
       buyer_phone: "+234****5678",
@@ -99,7 +99,7 @@ test("verified Paystack purchase creates one sold PIN visible in admin inventory
   expect(pins[0].source).toBe("paystack");
   expect(pins[0].buyer_email).toBe("buyer@example.com");
   expect(pins[0].paystack_reference).toBe("finpa_ref_001");
-  expect(pins[0].amount_paid).toBe(200000);
+  expect(pins[0].amount_paid).toBe(300000);
   expect(pins[0].currency).toBe("NGN");
 });
 
@@ -107,10 +107,10 @@ test("verified Paystack purchase is idempotent by reference", async () => {
   const verifier = async () => ({
     status: "success" as const,
     reference: "finpa_ref_dupe",
-    amount: 1500000,
+    amount: 2500000,
     currency: "NGN" as const,
     customer: { email: "buyer@example.com" },
-    metadata: { product: "finpa", plan_id: "annual_ngn" },
+    metadata: { product: "finpa-business", plan_id: "annual_ngn" },
   });
 
   const first = await processVerifiedPaystackPurchase("finpa_ref_dupe", verifier);
@@ -125,11 +125,11 @@ test("pending sale retries email after webhook is configured without creating a 
   const verifier = async () => ({
     status: "success" as const,
     reference: "finpa_ref_email_retry",
-    amount: 200000,
+    amount: 300000,
     currency: "NGN" as const,
     customer: { email: "buyer@example.com" },
     metadata: {
-      product: "finpa",
+      product: "finpa-business",
       plan_id: "monthly_ngn",
       buyer_name: "Buyer One",
     },
@@ -164,14 +164,14 @@ test("pending sale retries email after webhook is configured without creating a 
       "x-finpa-email-secret": "redacted_email_secret",
     });
     expect(capturedBody).toMatchObject({
-      product: "finpa",
+      product: "finpa-business",
       to: "buyer@example.com",
       pin: first.pin_code,
       plan_id: "monthly_ngn",
       period: "monthly",
       duration_days: 30,
       currency: "NGN",
-      amount_paid: 200000,
+      amount_paid: 300000,
       reference: "finpa_ref_email_retry",
       buyer_name: "Buyer One",
       webhook_secret: "redacted_email_secret",
@@ -188,10 +188,10 @@ test("sent sale does not resend email unnecessarily", async () => {
   const verifier = async () => ({
     status: "success" as const,
     reference: "finpa_ref_email_sent",
-    amount: 200000,
+    amount: 300000,
     currency: "NGN" as const,
     customer: { email: "buyer@example.com" },
-    metadata: { product: "finpa", plan_id: "monthly_ngn" },
+    metadata: { product: "finpa-business", plan_id: "monthly_ngn" },
   });
 
   let calls = 0;
@@ -223,7 +223,7 @@ test("sent sale does not resend email unnecessarily", async () => {
 test("success page HTML confirms payment without exposing PIN fields", () => {
   const html = renderPaystackSuccessPage({
     id: "sale-1",
-    pin_code: "FINPA-ABCD-EFGH",
+    pin_code: "BUS-ABCD-EFGH",
     plan_id: "monthly_ngn",
     period: "monthly",
     duration_days: 30,
@@ -231,7 +231,7 @@ test("success page HTML confirms payment without exposing PIN fields", () => {
     buyer_name: "Buyer",
     buyer_phone: "",
     currency: "NGN",
-    amount_paid: 200000,
+    amount_paid: 300000,
     paystack_reference: "finpa_ref_html",
     paystack_status: "success",
     source: "paystack",
@@ -244,7 +244,7 @@ test("success page HTML confirms payment without exposing PIN fields", () => {
   expect(html).toContain("buyer@example.com");
   expect(html).toContain("finpa_ref_html");
   expect(html).toContain("Your activation PIN has been sent to your email.");
-  expect(html).not.toContain("FINPA-ABCD-EFGH");
+  expect(html).not.toContain("BUS-ABCD-EFGH");
   expect(html).not.toContain('"pin"');
   expect(html).not.toContain("pin_code");
   expect(html).not.toContain('"sale"');
@@ -278,7 +278,7 @@ test("unverified or mismatched Paystack transaction never issues a PIN", async (
       amount: 999,
       currency: "NGN",
       customer: { email: "buyer@example.com" },
-      metadata: { product: "finpa", plan_id: "monthly_ngn" },
+      metadata: { product: "finpa-business", plan_id: "monthly_ngn" },
     })),
   ).rejects.toThrow(/amount or currency mismatch/i);
 

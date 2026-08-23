@@ -15,7 +15,7 @@ describe("business API (memory store)", () => {
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
     memoryResetForTests();
     memorySeedDemoPin();
-    await redeemPin("11111111-1111-1111-1111-111111111111", "FINPA-DEMO-0001");
+    await redeemPin("11111111-1111-1111-1111-111111111111", "BUS-DEMO-0001");
   });
 
   it("creates a business profile and returns zero dashboard", async () => {

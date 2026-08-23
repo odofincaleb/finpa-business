@@ -1,5 +1,5 @@
 import type { PinSale } from "../services/database";
-import { FINPA_PAYSTACK_PLANS, type FinpaPaystackPlanId } from "../services/payments";
+import { BUSINESS_PAYSTACK_PLANS, type BusinessPaystackPlanId } from "../services/payments";
 
 export function escapeHtml(value: unknown): string {
   return String(value ?? "")
@@ -24,7 +24,7 @@ export function formatMoney(amountSubunits: number, currency: string): string {
 }
 
 function planLabel(planId: string): string {
-  const plan = FINPA_PAYSTACK_PLANS[planId as FinpaPaystackPlanId];
+  const plan = BUSINESS_PAYSTACK_PLANS[planId as BusinessPaystackPlanId];
   return plan?.label || planId.replace(/_/g, " ");
 }
 
@@ -45,7 +45,7 @@ export function renderPaystackSuccessPage(sale: PinSale): string {
   const amount = escapeHtml(formatMoney(sale.amount_paid, sale.currency));
   const statusMsg = escapeHtml(emailStatusMessage(sale.email_status));
   const supportHref = escapeHtml(
-    `mailto:support@fideantech.com?subject=FINPA PIN Support - ${sale.paystack_reference}`,
+    `mailto:support@fideantech.com?subject=FINPA Business PIN Support - ${sale.paystack_reference}`,
   );
 
   return `<!DOCTYPE html>
@@ -53,7 +53,7 @@ export function renderPaystackSuccessPage(sale: PinSale): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FINPA Payment Confirmed</title>
+  <title>FINPA Business Payment Confirmed</title>
   <style>
     :root {
       --bg: #f4f6ff;
@@ -148,9 +148,9 @@ export function renderPaystackSuccessPage(sale: PinSale): string {
 </head>
 <body>
   <main class="card">
-    <div class="badge">FINPA Payment Confirmed</div>
+    <div class="badge">FINPA Business Payment Confirmed</div>
     <h1>Payment confirmed</h1>
-    <p>FINPA access is ready. Your activation details are being delivered securely.</p>
+    <p>FINPA Business access is ready. Your activation details are being delivered securely.</p>
     <div class="status">${statusMsg}</div>
     <table>
       <tr><td>Email</td><td>${email}</td></tr>
@@ -159,7 +159,7 @@ export function renderPaystackSuccessPage(sale: PinSale): string {
       <tr><td>Reference</td><td>${reference}</td></tr>
     </table>
     <div class="actions">
-      <a class="button primary" href="https://fideantech.com/finpa/">Back to FINPA</a>
+      <a class="button primary" href="https://fideantech.com/finpa/">Get FINPA Business</a>
       <a class="button secondary" href="${supportHref}">Contact support</a>
     </div>
     <p class="note">For security, your activation PIN is not displayed on this public page. Check the email address above for your PIN.</p>
@@ -179,7 +179,7 @@ export function renderPaystackFailurePage(input: {
   const reference = escapeHtml(input.reference || "");
   const supportCode = escapeHtml(input.supportCode || "");
   const supportSubject = encodeURIComponent(
-    `FINPA Payment Help - ${input.reference || "unknown"}`,
+    `FINPA Business Payment Help - ${input.reference || "unknown"}`,
   );
   const supportHref = escapeHtml(`mailto:support@fideantech.com?subject=${supportSubject}`);
   const referenceRow = input.reference
@@ -194,7 +194,7 @@ export function renderPaystackFailurePage(input: {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FINPA Payment Help</title>
+  <title>FINPA Business Payment Help</title>
   <style>
     :root {
       --bg: #f4f6ff;
@@ -295,23 +295,23 @@ export function renderPaystackFailurePage(input: {
 </head>
 <body>
   <main class="card">
-    <div class="badge">FINPA Payment Help</div>
+    <div class="badge">FINPA Business Payment Help</div>
     <h1>${title}</h1>
-    <p>We could not verify this FINPA payment.</p>
+    <p>We could not verify this FINPA Business payment.</p>
     <div class="status">${message}</div>
     <p>This can happen when:</p>
     <ul>
       <li>the payment reference is invalid or expired</li>
       <li>the payment is still processing</li>
       <li>the payment was not successful</li>
-      <li>the reference is not for FINPA</li>
+      <li>the reference is not for FINPA Business</li>
     </ul>
     <table>
       ${referenceRow}
       ${codeRow}
     </table>
     <div class="actions">
-      <a class="button primary" href="https://fideantech.com/finpa/">Back to FINPA</a>
+      <a class="button primary" href="https://fideantech.com/finpa/">Get FINPA Business</a>
       <a class="button secondary" href="${supportHref}">Contact support</a>
     </div>
     <p class="note">If you were debited, contact Fidean support with your Paystack reference. For security, activation PINs are never shown on this page.</p>

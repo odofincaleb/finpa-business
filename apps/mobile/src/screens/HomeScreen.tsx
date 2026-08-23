@@ -108,6 +108,13 @@ export function HomeScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.biz}>{business?.business_name || "Your business"}</Text>
+          {profile?.subscription_expires_at ? (
+            <Text style={styles.subLine}>
+              {new Date(profile.subscription_expires_at).getTime() > Date.now()
+                ? `✅ Active until ${new Date(profile.subscription_expires_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`
+                : "⚠️ Subscription expired — activate a PIN in Settings"}
+            </Text>
+          ) : null}
           {syncStatusLine ? (
             <Pressable onPress={() => void flushSyncQueue()}>
               <Text style={styles.sync}>{syncStatusLine}</Text>
@@ -231,6 +238,7 @@ function createStyles(c: ThemeColors) {
     },
     content: { padding: 16, paddingBottom: 48, gap: 12 },
     biz: { color: c.mistMuted, fontFamily: "DMSans_500Medium", fontSize: 14 },
+    subLine: { color: c.sageBright, fontFamily: "DMSans_400Regular", fontSize: 13 },
     sync: { color: c.sageBright, fontFamily: "DMSans_400Regular", fontSize: 13 },
     toast: {
       backgroundColor: c.warnBg,

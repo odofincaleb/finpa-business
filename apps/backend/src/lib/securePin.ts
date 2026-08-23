@@ -3,6 +3,9 @@ import { randomInt } from "crypto";
 /** Exclude 0/1/I/O to avoid spoken/typed activation-code ambiguity. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+export const PIN_PREFIX = "BUS";
+export const DEMO_PIN_CODE = "BUS-DEMO-0001";
+
 /** Crypto-secure alphanumeric chunk for activation PIN codes. */
 export function randomPinChunk(length = 4): string {
   let out = "";
@@ -13,7 +16,7 @@ export function randomPinChunk(length = 4): string {
 }
 
 export function generateActivationCode(): string {
-  return `FINPA-${randomPinChunk()}-${randomPinChunk()}`;
+  return `${PIN_PREFIX}-${randomPinChunk()}-${randomPinChunk()}`;
 }
 
 /** Demo / review PINs are off unless explicitly enabled. */
@@ -22,5 +25,6 @@ export function allowDemoPins(): boolean {
 }
 
 export function isDemoPinCode(code: string): boolean {
-  return code.trim().toUpperCase().startsWith("FINPA-DEMO-");
+  const normalized = code.trim().toUpperCase();
+  return normalized.startsWith("BUS-DEMO-") || normalized.startsWith("FINPA-DEMO-");
 }

@@ -1,20 +1,4 @@
--- FINPA Business: activation pins + redeem function (no RLS)
-
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
-CREATE TABLE IF NOT EXISTS activation_pins (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code TEXT NOT NULL UNIQUE,
-    period TEXT NOT NULL CHECK (period IN ('monthly', 'annual')),
-    duration_days INT NOT NULL,
-    redeemed_by UUID REFERENCES profiles (id),
-    redeemed_at TIMESTAMPTZ,
-    expires_at TIMESTAMPTZ,
-    notes TEXT NOT NULL DEFAULT '',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS activation_pins_code_idx ON activation_pins (code);
+-- Treat BUS-DEMO-* (and legacy FINPA-DEMO-*) as demo PINs.
 
 CREATE OR REPLACE FUNCTION redeem_activation_pin(
   p_code TEXT,

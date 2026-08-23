@@ -6,6 +6,7 @@ export type RootStackParamList = {
   QuickTips: undefined;
   AdminPins: undefined;
   Settings: undefined;
+  ActivatePin: undefined;
   AddSale: undefined;
   AddExpense: undefined;
   Debtors: undefined;

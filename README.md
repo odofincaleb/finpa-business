@@ -34,7 +34,7 @@ npm run dev:backend
 Health: `http://localhost:3001/health`
 
 Without `DATABASE_URL`, auth is `Authorization: Bearer dev:<userId>:<email>`.
-Demo PIN (when `ALLOW_DEMO_PINS=true`): **`FINPA-DEMO-0001`**.
+Demo PIN (when `ALLOW_DEMO_PINS=true`): **`BUS-DEMO-0001`**. Paid PINs use `BUS-XXXX-XXXX`.
 
 ## Mobile
 

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -105,14 +106,32 @@ export function SettingsScreen() {
           </Pressable>
         </View>
 
-        <Text style={styles.section}>Subscription</Text>
-        <Text style={styles.body}>
-          {subscriptionActive
-            ? `${profile?.subscription_period ?? "Active"} · until ${expires}`
-            : isSuperAdmin
-              ? "Super admin — PIN activation not required"
-              : "Inactive — redeem a PIN to continue"}
-        </Text>
+        <Text style={styles.section}>🔐 Subscription</Text>
+        <View style={styles.subCard}>
+          <Text style={styles.body}>
+            Plan:{" "}
+            {subscriptionActive
+              ? profile?.subscription_period === "annual"
+                ? "FINPA Business Annual"
+                : "FINPA Business Monthly"
+              : "None"}
+          </Text>
+          <Text style={styles.body}>
+            Status: {subscriptionActive ? "✅ Active" : isSuperAdmin ? "✅ Super admin" : "⚠️ Not activated"}
+          </Text>
+          <Text style={styles.body}>Expires: {subscriptionActive ? expires : "—"}</Text>
+          <View style={styles.subActions}>
+            <Pressable style={styles.subBtn} onPress={() => navigation.navigate("ActivatePin")}>
+              <Text style={styles.subBtnText}>🔓 Activate PIN</Text>
+            </Pressable>
+            <Pressable
+              style={styles.subBtnAlt}
+              onPress={() => void Linking.openURL("https://fideantech.com/finpa/")}
+            >
+              <Text style={styles.subBtnAltText}>💳 Get FINPA Business → fideantech.com/finpa/</Text>
+            </Pressable>
+          </View>
+        </View>
 
         {isSuperAdmin ? (
           <>
@@ -217,6 +236,31 @@ function createStyles(c: ThemeColors) {
       fontFamily: "DMSans_400Regular",
       fontSize: 15,
     },
+    subCard: {
+      backgroundColor: c.inkCard,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.line,
+      gap: 8,
+    },
+    subActions: { gap: 8, marginTop: 8 },
+    subBtn: {
+      backgroundColor: "#E3B341",
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+    subBtnText: { color: "#0B1210", fontFamily: "DMSans_700Bold" },
+    subBtnAlt: {
+      backgroundColor: c.inkSoft,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: c.line,
+    },
+    subBtnAltText: { color: c.mist, fontFamily: "DMSans_500Medium", fontSize: 13, textAlign: "center" },
     hint: {
       color: c.mistMuted,
       fontFamily: "DMSans_400Regular",

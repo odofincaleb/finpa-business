@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
+import { NavigationContext } from "@react-navigation/native";
+import { ArrowLeft } from "lucide-react-native";
 import { BrandMark } from "../components/BrandMark";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
@@ -16,7 +18,11 @@ import { ApiError, getApiUrl, redeemPin } from "../lib/api";
 import { showDevUi } from "../lib/env";
 import type { ThemeColors } from "../theme/colors";
 
+const DEMO_PINS = new Set(["BUS-DEMO-0001", "FINPA-DEMO-0001"]);
+
 export function ActivatePinScreen() {
+  const navigation = React.useContext(NavigationContext);
+  const canGoBack = Boolean(navigation?.canGoBack());
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { token, profile, setProfileLocal, signOut, isDevAuth } = useAuth();
@@ -28,7 +34,7 @@ export function ActivatePinScreen() {
   const unlockDevOffline = (pin: string) => {
     // Offline demo unlock only in local/dev auth — never in release APKs
     if (!showDevUi || !isDevAuth || !profile) return false;
-    if (pin !== "FINPA-DEMO-0001") return false;
+    if (!DEMO_PINS.has(pin)) return false;
     const expires = new Date();
     expires.setDate(expires.getDate() + 30);
     setProfileLocal(
@@ -53,6 +59,7 @@ export function ActivatePinScreen() {
       const result = await redeemPin(token, pin);
       setSuccess(result.summary);
       setProfileLocal(result.profile, result.subscriptionActive);
+      if (canGoBack) navigation?.goBack();
     } catch (err) {
       if (unlockDevOffline(pin)) return;
       const msg =
@@ -73,6 +80,12 @@ export function ActivatePinScreen() {
     <LinearGradient colors={colors.gradient} style={styles.root}>
       <StatusBar style={colors.statusBar} />
       <View style={styles.inner}>
+        {canGoBack ? (
+          <Pressable onPress={() => navigation?.goBack()} style={styles.back}>
+            <ArrowLeft size={20} color={colors.mist} />
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        ) : null}
         <BrandMark size={108} style={styles.logo} />
         <Text style={styles.tagline}>Business sales, expenses, and profit</Text>
         <Text style={styles.lead}>Enter your Activation Pin</Text>
@@ -80,7 +93,7 @@ export function ActivatePinScreen() {
         <TextInput
           style={styles.input}
           autoCapitalize="characters"
-          placeholder="FINPA-XXXX-XXXX"
+          placeholder="BUS-XXXX-XXXX"
           placeholderTextColor={colors.mistMuted}
           value={code}
           onChangeText={setCode}
@@ -104,7 +117,7 @@ export function ActivatePinScreen() {
           <>
             <Text style={styles.dev}>API: {getApiUrl()}</Text>
             <Text style={styles.devHint}>
-              Demo PIN: FINPA-DEMO-0001
+              Demo PIN: BUS-DEMO-0001
               {isDevAuth
                 ? " · if Activate fails, demo PIN still unlocks offline in dev mode"
                 : ""}
@@ -124,6 +137,8 @@ function createStyles(c: ThemeColors) {
       justifyContent: "center",
       paddingHorizontal: 28,
     },
+    back: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 },
+    backText: { color: c.mistMuted, fontFamily: "DMSans_400Regular" },
     logo: {
       alignSelf: "flex-start",
     },

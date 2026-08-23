@@ -95,6 +95,7 @@ function RootNavigator() {
         <Stack.Screen name="QuickTips" component={QuickTipsScreen} />
         <Stack.Screen name="AdminPins" component={AdminPinsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="ActivatePin" component={ActivatePinScreen} />
         <Stack.Screen name="AddSale" component={AddSaleScreen} />
         <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
         <Stack.Screen name="Debtors" component={DebtorsScreen} />
