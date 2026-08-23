@@ -13,7 +13,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
   if (isEas) {
     if (!apiUrl) {
       throw new Error(
-        "EAS build requires EXPO_PUBLIC_API_URL — public https URL of the hosted FINPA backend (not your PC LAN IP).",
+        "EAS build requires EXPO_PUBLIC_API_URL — public https URL of the hosted FINPA Business backend (not your PC LAN IP).",
       );
     }
     if (LOCAL_OR_LAN.test(apiUrl)) {
@@ -30,9 +30,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: config.name ?? "FINPA",
-    slug: config.slug ?? "finpa",
-    scheme: config.scheme ?? "finpa",
+    name: config.name ?? "FINPA Business",
+    slug: config.slug ?? "finpa-business",
+    scheme: config.scheme ?? "finpa-business",
     android: {
       ...config.android,
       // Allow http only for local/LAN dev; production should use https

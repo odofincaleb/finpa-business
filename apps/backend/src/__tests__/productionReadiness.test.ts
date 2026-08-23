@@ -21,9 +21,10 @@ describe("health endpoints", () => {
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
       ok: true,
-      service: "finpa-backend",
+      service: "finpa-business-backend",
     });
     expect(typeof res.body.supabase).toBe("boolean");
+    expect(typeof res.body.postgres).toBe("boolean");
     expect(typeof res.body.openrouter).toBe("boolean");
   });
 
@@ -55,6 +56,7 @@ describe("ALLOW_DEMO_PINS", () => {
   beforeEach(() => {
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.DATABASE_URL;
   });
 
   afterEach(() => {

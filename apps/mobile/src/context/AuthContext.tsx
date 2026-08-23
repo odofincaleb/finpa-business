@@ -18,7 +18,7 @@ import {
 } from "../lib/authSnapshot";
 import type { Profile } from "../types";
 
-const DEV_SESSION_KEY = "finpa.dev.session";
+const DEV_SESSION_KEY = "finpa-business.dev.session";
 
 type AuthContextValue = {
   loading: boolean;
@@ -199,7 +199,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.warn(
-          "[finpa] auth deep-link failed:",
+          "[finpa-business] auth deep-link failed:",
           err instanceof Error ? err.message : err,
         );
       }

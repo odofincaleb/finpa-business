@@ -12,10 +12,10 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://finpa-0faa.onbelmo.uk",
+        "EXPO_PUBLIC_API_URL": "https://finpa-business.fideantech.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://eazefnknevdjdvktwnnb.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhemVmbmtuZXZkamR2a3R3bm5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMDIyMTgsImV4cCI6MjEwMDU3ODIxOH0.bHRGF7gx3ucf8x8mDt9Dgyf1hVvmErK3elMHT5PVJ7g",
-        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa://auth/callback"
+        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa-business://auth/callback"
       }
     },
     "preview": {
@@ -24,10 +24,10 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://finpa-0faa.onbelmo.uk",
+        "EXPO_PUBLIC_API_URL": "https://finpa-business.fideantech.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://eazefnknevdjdvktwnnb.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhemVmbmtuZXZkamR2a3R3bm5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMDIyMTgsImV4cCI6MjEwMDU3ODIxOH0.bHRGF7gx3ucf8x8mDt9Dgyf1hVvmErK3elMHT5PVJ7g",
-        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa://auth/callback"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhemVmbmtuZXZkamR2a3R3bm5iIiwicm9sZCI6ImFub24iLCJpYXQiOjE3ODUwMDIyMTgsImV4cCI6MjEwMDU3ODIxOH0.bHRGF7gx3ucf8x8mDt9Dgyf1hVvmErK3elMHT5PVJ7g",
+        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa-business://auth/callback"
       }
     },
     "production": {
@@ -35,10 +35,10 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://finpa-0faa.onbelmo.uk",
+        "EXPO_PUBLIC_API_URL": "https://finpa-business.fideantech.com",
         "EXPO_PUBLIC_SUPABASE_URL": "https://eazefnknevdjdvktwnnb.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhemVmbmtuZXZkamR2a3R3bm5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMDIyMTgsImV4cCI6MjEwMDU3ODIxOH0.bHRGF7gx3ucf8x8mDt9Dgyf1hVvmErK3elMHT5PVJ7g",
-        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa://auth/callback"
+        "EXPO_PUBLIC_AUTH_REDIRECT_URL": "finpa-business://auth/callback"
       }
     }
   },

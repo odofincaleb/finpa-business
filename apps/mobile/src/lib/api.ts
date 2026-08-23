@@ -1,4 +1,14 @@
-import type { BudgetActualRow, CurrencyCode, Profile, Transaction } from "../types";
+import type {
+  BusinessProfile,
+  CurrencyCode,
+  DashboardSummary,
+  Debtor,
+  DebtorPayment,
+  Expense,
+  ExpenseCategory,
+  Profile,
+  Sale,
+} from "../types";
 import { showDevUi } from "./env";
 
 const API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:3001").replace(
@@ -19,9 +29,9 @@ export class ApiError extends Error {
 
 function networkErrorMessage() {
   if (showDevUi) {
-    return `Could not reach FINPA server at ${API_URL}. Use your PC LAN IP (not localhost) and keep the backend running.`;
+    return `Could not reach FINPA Business server at ${API_URL}. Use your PC LAN IP (not localhost) and keep the backend running.`;
   }
-  return "Could not reach FINPA servers. Check your internet connection and try again.";
+  return "Could not reach FINPA Business servers. Check your internet connection and try again.";
 }
 
 async function request<T>(
@@ -176,88 +186,130 @@ export async function redeemPin(token: string, code: string) {
   );
 }
 
-export async function chatExpense(
+export type SaleWrite = {
+  amount: number;
+  item_or_service?: string;
+  payment_method?: string;
+  customer_name?: string | null;
+  quantity?: number;
+  unit_price?: number | null;
+  sold_at?: string;
+  notes?: string | null;
+  client_id?: string | null;
+};
+
+export type ExpenseWrite = {
+  amount: number;
+  category?: string;
+  payment_method?: string;
+  notes?: string | null;
+  incurred_at?: string;
+  client_id?: string | null;
+};
+
+export async function fetchBusinessProfile(token: string) {
+  return request<{ profile: BusinessProfile | null }>("/api/business/profile", { token });
+}
+
+export async function createBusinessProfileApi(
   token: string,
-  message: string,
-  categories: string[] = [],
+  body: { business_name: string; business_type?: string; currency?: string },
 ) {
-  return request<{
-    action: string;
-    summary: string;
-    transactions: Transaction[];
-  }>("/api/chat-expense", {
+  return request<{ profile: BusinessProfile }>("/api/business/profile", {
     method: "POST",
     token,
-    body: JSON.stringify({
-      message,
-      categories: categories.filter(Boolean).slice(0, 40),
-    }),
+    body: JSON.stringify(body),
   });
 }
 
-export async function fetchTransactions(token: string) {
-  return request<{ transactions: Transaction[] }>("/api/transactions", { token });
+export async function fetchDashboard(token: string, range: "today" | "weekly" | "monthly" = "today") {
+  const path =
+    range === "weekly"
+      ? "/api/business/dashboard/weekly"
+      : range === "monthly"
+        ? "/api/business/dashboard/monthly"
+        : "/api/business/dashboard";
+  return request<DashboardSummary>(path, { token });
 }
 
-export type TransactionWriteInput = {
-  amount: number;
-  currency?: string;
-  category: string;
-  merchant: string;
-  type: "expense" | "income";
-  payment_method?: string;
-  notes?: string;
-  created_at?: string;
-  client_id?: string;
-};
+export async function fetchSales(token: string) {
+  return request<{ sales: Sale[] }>("/api/business/sales", { token });
+}
 
-export async function createTransactionApi(
+export async function createSaleApi(token: string, body: SaleWrite) {
+  return request<{ sale: Sale; client_id: string | null }>("/api/business/sales", {
+    method: "POST",
+    token,
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchExpenses(token: string) {
+  return request<{ expenses: Expense[] }>("/api/business/expenses", { token });
+}
+
+export async function createExpenseApi(token: string, body: ExpenseWrite) {
+  return request<{ expense: Expense; client_id: string | null }>("/api/business/expenses", {
+    method: "POST",
+    token,
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchExpenseCategories(token: string) {
+  return request<{ categories: ExpenseCategory[] }>("/api/business/expenses/categories", {
+    token,
+  });
+}
+
+export async function fetchDebtors(token: string, status: "open" | "paid" | "all" = "all") {
+  return request<{ debtors: Debtor[] }>(`/api/business/debtors?status=${status}`, { token });
+}
+
+export async function createDebtorApi(
   token: string,
-  body: TransactionWriteInput,
+  body: {
+    customer_name: string;
+    phone?: string | null;
+    total_amount: number;
+    amount_paid?: number;
+    due_date?: string | null;
+    notes?: string | null;
+  },
 ) {
-  return request<{ transaction: Transaction; client_id: string | null }>(
-    "/api/transactions",
-    { method: "POST", token, body: JSON.stringify(body) },
+  return request<{ debtor: Debtor }>("/api/business/debtors", {
+    method: "POST",
+    token,
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchDebtorDetail(token: string, id: string) {
+  return request<{ debtor: Debtor; payments: DebtorPayment[] }>(
+    `/api/business/debtors/${encodeURIComponent(id)}`,
+    { token },
   );
 }
 
-export async function updateTransactionApi(
+export async function addDebtorPaymentApi(
   token: string,
   id: string,
-  body: Partial<TransactionWriteInput>,
+  amount: number,
+  note?: string,
 ) {
-  return request<{ transaction: Transaction }>(
-    `/api/transactions/${encodeURIComponent(id)}`,
-    { method: "PATCH", token, body: JSON.stringify(body) },
+  return request<{ debtor: Debtor; payment: DebtorPayment }>(
+    `/api/business/debtors/${encodeURIComponent(id)}/payments`,
+    { method: "POST", token, body: JSON.stringify({ amount, note }) },
   );
 }
 
-export async function deleteTransactionApi(token: string, id: string) {
-  return request<{ ok: boolean }>(
-    `/api/transactions/${encodeURIComponent(id)}`,
-    { method: "DELETE", token },
-  );
-}
-
-export async function fetchBudgets(token: string, year: number, month: number) {
-  return request<{
-    rows: BudgetActualRow[];
-    incomeTotal: number;
-  }>(`/api/budgets/${year}/${month}`, { token });
-}
-
-export async function saveBudgets(
-  token: string,
-  year: number,
-  month: number,
-  items: { category: string; budget_amount: number }[],
-) {
-  return request<{ rows: BudgetActualRow[]; incomeTotal: number }>(
-    `/api/budgets/${year}/${month}`,
+export async function markDebtorPaidApi(token: string, debtor: Debtor) {
+  return request<{ debtor: Debtor }>(
+    `/api/business/debtors/${encodeURIComponent(debtor.id)}`,
     {
       method: "PUT",
       token,
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ amount_paid: debtor.total_amount, status: "paid" }),
     },
   );
 }

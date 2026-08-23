@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { getSupabase, hasSupabase } from "../lib/supabase";
 import { AppError } from "../lib/errors";
 import type { Profile } from "../types/transaction";
-import { memoryGetProfile } from "../services/memoryStore";
+import { getProfile } from "../services/database";
 
 export interface AuthedRequest extends Request {
   userId: string;
@@ -36,34 +36,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       }
       userId = data.user.id;
       email = data.user.email ?? "";
-
-      const { data: row, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profileError) {
-        throw new AppError(500, "INTERNAL", profileError.message);
-      }
-
-      if (!row) {
-        const { data: created, error: createError } = await supabase
-          .from("profiles")
-          .insert({
-            id: userId,
-            email,
-            preferred_currency: "NGN",
-          })
-          .select("*")
-          .single();
-        if (createError || !created) {
-          throw new AppError(500, "INTERNAL", createError?.message ?? "Profile create failed");
-        }
-        profile = created as Profile;
-      } else {
-        profile = row as Profile;
-      }
+      profile = await getProfile(userId, email);
     } else {
       // Dev memory mode: token format "dev:<userId>:<email>"
       if (!token.startsWith("dev:")) {
@@ -76,7 +49,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       const parts = token.split(":");
       userId = parts[1] || "dev-user";
       email = parts[2] || "dev@finpa.app";
-      profile = memoryGetProfile(userId, email);
+      profile = await getProfile(userId, email);
     }
 
     const authed = req as AuthedRequest;
@@ -102,7 +75,7 @@ export function requireSubscription(req: Request, _res: Response, next: NextFunc
       throw new AppError(
         403,
         "SUBSCRIPTION_REQUIRED",
-        "Activate FINPA with a valid PIN to continue",
+        "Activate FINPA Business with a valid PIN to continue",
       );
     }
     next();

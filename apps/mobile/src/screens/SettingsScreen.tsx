@@ -84,9 +84,9 @@ export function SettingsScreen() {
           </Pressable>
           <Pressable
             style={styles.row}
-            onPress={() => navigation.navigate("Budget")}
+            onPress={() => navigation.navigate("Debtors")}
           >
-            <Text style={styles.rowText}>Budget & actuals</Text>
+            <Text style={styles.rowText}>Debtors</Text>
             <Text style={styles.check}>Open</Text>
           </Pressable>
           <Pressable

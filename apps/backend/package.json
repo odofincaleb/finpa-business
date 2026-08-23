@@ -1,5 +1,5 @@
 {
-  "name": "@finpa/backend",
+  "name": "@finpa-business/backend",
   "version": "1.0.0",
   "private": true,
   "main": "dist/index.js",
@@ -7,6 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
+    "test": "jest --config ./jest.config.js",
     "generate-pins": "tsx ../../scripts/generate-pins.ts"
   },
   "engines": {
@@ -22,10 +23,12 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "openai": "^4.104.0",
+    "pg": "^8.16.3",
     "typescript": "^5.8.3",
     "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@types/pg": "^8.15.5",
     "tsx": "^4.19.4"
   }
 }

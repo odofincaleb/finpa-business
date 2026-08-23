@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { memoryResetBusiness } from "./memoryBusiness";
 import { findMatchingTransaction } from "../lib/matchTransaction";
 import {
   allowDemoPins,
@@ -383,4 +384,5 @@ export function memoryResetForTests() {
   budgets.clear();
   pins.clear();
   pinSales.clear();
+  memoryResetBusiness();
 }

@@ -3,10 +3,7 @@ import { z } from "zod";
 import { AuthedRequest, requireAuth, requireSubscription } from "../middleware/auth";
 import { chatExpenseLimiter } from "../middleware/rateLimit";
 import { extractTransactions } from "../services/openrouter";
-import {
-  insertTransactions,
-  updateMatchedTransaction,
-} from "../services/database";
+import { createExpense, createSale, getBusinessProfile } from "../services/database";
 import { AppError } from "../lib/errors";
 import { parseExpenseLocally } from "../lib/localParse";
 import type { AiChatResult, CurrencyCode } from "../types/transaction";
@@ -31,28 +28,26 @@ router.post(
         throw new AppError(400, "VALIDATION_ERROR", "message is required");
       }
 
+      const biz = await getBusinessProfile(userId);
+      if (!biz) {
+        res.json({
+          action: "clarify",
+          summary: "Set up your business profile first, then I can log sales and expenses.",
+          transactions: [],
+        });
+        return;
+      }
+
       const currency = profile.preferred_currency as CurrencyCode;
       const categories = parsed.data.categories ?? [];
+      const looksLikeSale = /\b(sold|sale|sales|received from)\b/i.test(parsed.data.message);
 
       let ai: AiChatResult;
       try {
-        ai = await extractTransactions(
-          parsed.data.message,
-          currency,
-          categories,
-        );
+        ai = await extractTransactions(parsed.data.message, currency, categories);
       } catch (aiErr) {
-        // OpenRouter free tier often 429/502 — still log clear expenses
-        const local = parseExpenseLocally(
-          parsed.data.message,
-          currency,
-          categories,
-        );
+        const local = parseExpenseLocally(parsed.data.message, currency, categories);
         if (!local) throw aiErr;
-        console.warn(
-          "[finpa] OpenRouter failed; used local parse:",
-          aiErr instanceof Error ? aiErr.message : aiErr,
-        );
         ai = {
           action: "create",
           summary: local.summary,
@@ -60,56 +55,44 @@ router.post(
         };
       }
 
-      if (ai.action === "clarify") {
-        res.json({
-          action: ai.action,
-          summary: ai.summary,
-          transactions: [],
-        });
-        return;
-      }
-
-      if (ai.action === "update") {
-        if (!ai.update?.match && !Object.keys(ai.update?.fields ?? {}).length) {
-          throw new AppError(422, "PARSE_FAILED", "Update missing match criteria");
-        }
-        const updated = await updateMatchedTransaction(
-          userId,
-          ai.update?.match || parsed.data.message,
-          ai.update?.fields ?? {},
-          parsed.data.message,
-        );
-        if (!updated) {
-          res.json({
-            action: "clarify",
-            summary: "I couldn't find that transaction to update. Try being more specific.",
-            transactions: [],
-          });
-          return;
-        }
-        res.json({
-          action: "update",
-          summary: ai.summary,
-          transactions: [updated],
-        });
-        return;
-      }
-
-      if (!ai.items.length) {
+      if (ai.action === "clarify" || !ai.items.length) {
         res.json({
           action: "clarify",
-          summary: ai.summary || "I didn't find any transactions to log.",
+          summary: ai.summary || "I didn't find a sale or expense to log.",
           transactions: [],
         });
         return;
       }
 
-      const created = await insertTransactions(userId, ai.items);
-      res.json({
-        action: "create",
-        summary: ai.summary,
-        transactions: created,
+      const item = ai.items[0];
+      if (looksLikeSale || item.type === "income") {
+        const sale = await createSale(userId, {
+          amount: item.amount,
+          item_or_service: item.merchant || item.category,
+          payment_method: /pos/i.test(item.payment_method)
+            ? "pos"
+            : /transfer/i.test(item.payment_method)
+              ? "transfer"
+              : /credit/i.test(item.payment_method)
+                ? "credit"
+                : "cash",
+          notes: item.notes,
+        });
+        res.json({ action: "create", summary: ai.summary, sale });
+        return;
+      }
+
+      const expense = await createExpense(userId, {
+        amount: item.amount,
+        category: item.category || "Miscellaneous",
+        payment_method: /pos/i.test(item.payment_method)
+          ? "pos"
+          : /transfer/i.test(item.payment_method)
+            ? "transfer"
+            : "cash",
+        notes: item.notes,
       });
+      res.json({ action: "create", summary: ai.summary, expense });
     } catch (err) {
       next(err);
     }

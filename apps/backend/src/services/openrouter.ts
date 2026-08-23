@@ -91,7 +91,7 @@ function getClient() {
     baseURL: "https://openrouter.ai/api/v1",
     defaultHeaders: {
       "HTTP-Referer": "https://finpa.app",
-      "X-Title": "FINPA",
+      "X-Title": "FINPA Business",
     },
   });
 }
@@ -101,8 +101,8 @@ function buildSystemPrompt(
   categoryEnum: string[],
 ): string {
   const list = categoryEnum.join(", ");
-  return `You are FINPA, a Financial Personal Assistant.
-Extract financial transactions from natural language (English or Nigerian English).
+  return `You are FINPA Business, a business sales and expense assistant.
+Extract sales or expenses from natural language (English or Nigerian English).
 Default currency is ${preferredCurrency} when the user omits a currency. Naira/NGN is common.
 Split multi-item statements into separate items.
 Pick category from this exact list only: ${list}.

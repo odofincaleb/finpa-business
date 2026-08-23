@@ -1,29 +1,19 @@
-export const CURRENCIES = ["NGN", "USD", "EUR", "GBP", "GHS", "KES", "ZAR"] as const;
-export type CurrencyCode = (typeof CURRENCIES)[number];
+export const DEFAULT_EXPENSE_CATEGORIES: { name: string; icon: string }[] = [
+  { name: "Rent", icon: "🏠" },
+  { name: "Utilities", icon: "⚡" },
+  { name: "Salaries", icon: "👥" },
+  { name: "Inventory", icon: "📦" },
+  { name: "Transport", icon: "🚚" },
+  { name: "Marketing", icon: "📢" },
+  { name: "Repairs", icon: "🔧" },
+  { name: "Food & Drinks", icon: "🍽️" },
+  { name: "Miscellaneous", icon: "📌" },
+];
 
-export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
-  NGN: "₦",
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  GHS: "₵",
-  KES: "KSh",
-  ZAR: "R",
-};
+export const PAYMENT_METHODS = ["cash", "pos", "transfer", "credit"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
-export type SubscriptionPeriod = "monthly" | "annual";
-export type SyncStatus = "synced" | "pending";
-export type PaymentMethod = "cash" | "pos" | "transfer" | "credit";
-
-export interface Profile {
-  id: string;
-  email: string;
-  preferred_currency: CurrencyCode;
-  subscription_period: SubscriptionPeriod | null;
-  subscription_expires_at: string | null;
-  activated_at: string | null;
-  created_at: string;
-}
+export type DebtorStatus = "open" | "paid" | "partial";
 
 export interface BusinessProfile {
   id: string;
@@ -35,13 +25,14 @@ export interface BusinessProfile {
   updated_at: string;
 }
 
-export interface Sale {
+export interface SaleRecord {
   id: string;
   business_id: string;
   amount: number;
   item_or_service: string;
   payment_method: string;
   customer_name: string | null;
+  staff_id: string | null;
   quantity: number;
   unit_price: number | null;
   sold_at: string;
@@ -49,21 +40,22 @@ export interface Sale {
   created_by: string;
   created_at: string;
   client_id: string | null;
-  sync_status?: SyncStatus;
+  sync_status: string;
 }
 
-export interface Expense {
+export interface ExpenseRecord {
   id: string;
   business_id: string;
   amount: number;
   category: string;
   payment_method: string;
   notes: string | null;
+  staff_id: string | null;
   incurred_at: string;
   created_by: string;
   created_at: string;
   client_id: string | null;
-  sync_status?: SyncStatus;
+  sync_status: string;
 }
 
 export interface ExpenseCategory {
@@ -73,7 +65,7 @@ export interface ExpenseCategory {
   icon: string;
 }
 
-export interface Debtor {
+export interface DebtorRecord {
   id: string;
   business_id: string;
   customer_name: string;
@@ -82,7 +74,7 @@ export interface Debtor {
   amount_paid: number;
   balance: number;
   due_date: string | null;
-  status: "open" | "paid" | "partial";
+  status: DebtorStatus;
   notes: string | null;
   created_by: string;
   created_at: string;
@@ -98,8 +90,10 @@ export interface DebtorPayment {
   created_by: string;
 }
 
+export type LedgerKind = "sale" | "expense";
+
 export interface LedgerItem {
-  kind: "sale" | "expense";
+  kind: LedgerKind;
   id: string;
   amount: number;
   title: string;
@@ -116,8 +110,32 @@ export interface DashboardSummary {
   recentTransactions: LedgerItem[];
 }
 
-export interface ChatFeedItem {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-}
+export type SaleWrite = {
+  amount: number;
+  item_or_service?: string;
+  payment_method?: string;
+  customer_name?: string | null;
+  quantity?: number;
+  unit_price?: number | null;
+  sold_at?: string;
+  notes?: string | null;
+  client_id?: string | null;
+};
+
+export type ExpenseWrite = {
+  amount: number;
+  category?: string;
+  payment_method?: string;
+  notes?: string | null;
+  incurred_at?: string;
+  client_id?: string | null;
+};
+
+export type DebtorWrite = {
+  customer_name: string;
+  phone?: string | null;
+  total_amount: number;
+  amount_paid?: number;
+  due_date?: string | null;
+  notes?: string | null;
+};

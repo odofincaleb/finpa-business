@@ -15,45 +15,26 @@ type TipBlock = {
 
 const TIPS: TipBlock[] = [
   {
-    title: "Log spending",
+    title: "Record a sale",
     examples: [
-      "Spent 4500 on fuel",
-      "Spen ₦200,000 on Samuel's School fees",
-      "Paid 15000 for lunch at Chicken Republic with transfer",
+      "Sold 5 shirts ₦75,000 POS",
+      "Sold bread 2500 cash",
+      "Sale ₦12,000 transfer",
     ],
-    note: "Include amount + what it was for. Custom categories (like School) are matched from your budget list.",
+    note: "Amount + what you sold. Add POS, cash, transfer, or credit.",
   },
   {
-    title: "Log income",
+    title: "Record an expense",
     examples: [
-      "Received 250000 salary",
-      "Got paid 80k from freelance",
+      "Paid rent ₦250,000",
+      "Paid transport 3500",
+      "Inventory 48000 transfer",
     ],
   },
   {
-    title: "Fix a wrong category",
+    title: "Debtors",
     examples: [
-      "Change that school fees to School",
-      "Move that Other entry to School",
-      "Change 200000 to Transportation",
-    ],
-    note: "Works on entries already on your phone — no need to delete and re-add.",
-  },
-  {
-    title: "Ask FINPA",
-    examples: [
-      "Can I afford ₦80,000 shoes?",
-      "Can I afford 50k on School?",
-      "How much left in Transportation?",
-      "How am I doing on my budget?",
-      "How much have I spent this month?",
-    ],
-    note: "Switch to Ask on Home, or type these in Chat. Answers use your budgets and ledger — no new charge.",
-  },
-  {
-    title: "Manual entry",
-    examples: [
-      "Use Manual mode to pick expense/income, category chips, and amount precisely.",
+      "Add a customer who still owes you, then record partial payments until the balance is zero.",
     ],
   },
 ];
@@ -74,7 +55,7 @@ export function QuickTipsScreen() {
 
         <Text style={styles.title}>Quick tips</Text>
         <Text style={styles.lead}>
-          Short phrases FINPA understands in Chat and Ask. Copy the style — amounts and categories can change.
+          Short phrases FINPA Business understands when you record a sale or expense.
         </Text>
 
         {TIPS.map((block) => (

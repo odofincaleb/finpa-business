@@ -74,7 +74,7 @@ export function ActivatePinScreen() {
       <StatusBar style={colors.statusBar} />
       <View style={styles.inner}>
         <BrandMark size={108} style={styles.logo} />
-        <Text style={styles.tagline}>Financial Personal Assistant</Text>
+        <Text style={styles.tagline}>Business sales, expenses, and profit</Text>
         <Text style={styles.lead}>Enter your Activation Pin</Text>
 
         <TextInput

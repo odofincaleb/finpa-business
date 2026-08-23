@@ -51,9 +51,9 @@ export function AuthScreen() {
         style={styles.inner}
       >
         <BrandMark size={120} style={styles.logo} />
-        <Text style={styles.tagline}>Financial Personal Assistant</Text>
+        <Text style={styles.tagline}>Business sales, expenses, and profit</Text>
         <Text style={styles.lead}>
-          Log spending in plain language. Stay on budget without the spreadsheet grind.
+          Record sales and expenses in seconds. See today&apos;s profit without a spreadsheet.
         </Text>
 
         <View style={styles.form}>

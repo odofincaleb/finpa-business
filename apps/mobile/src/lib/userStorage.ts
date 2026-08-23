@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
  */
 export function userStoragePrefix(userId: string): string {
   const safe = (userId || "anon").replace(/[^a-zA-Z0-9_-]/g, "_");
-  return `finpa.u.${safe}`;
+  return `finpa-business.u.${safe}`;
 }
 
 export function txKey(userId: string) {

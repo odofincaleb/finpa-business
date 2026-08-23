@@ -13,7 +13,7 @@ type Props = {
   imageStyle?: StyleProp<ImageStyle>;
 };
 
-/** FINPA logo (includes wordmark in the artwork). Optional tagline beside/under. */
+/** FINPA Business logo (includes wordmark in the artwork). Optional tagline beside/under. */
 export function BrandMark({
   size = 56,
   showWordmark = false,
@@ -37,11 +37,11 @@ export function BrandMark({
           imageStyle,
         ]}
         resizeMode="cover"
-        accessibilityLabel="FINPA"
+        accessibilityLabel="FINPA Business"
       />
       {showWordmark || tagline ? (
         <View style={styles.textCol}>
-          {showWordmark ? <Text style={styles.brand}>FINPA</Text> : null}
+          {showWordmark ? <Text style={styles.brand}>FINPA Business</Text> : null}
           {tagline ? <Text style={styles.tagline}>{tagline}</Text> : null}
         </View>
       ) : null}

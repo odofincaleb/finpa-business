@@ -1,455 +1,214 @@
-import React, { useCallback, useMemo, useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import React, { useMemo } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import {
-  BookOpen,
-  LayoutDashboard,
-  Lightbulb,
-  PieChart,
-  Settings,
-} from "lucide-react-native";
+import { BookOpen, Lightbulb, Settings, Users } from "lucide-react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useNavigation } from "@react-navigation/native";
 import { BrandMark } from "../components/BrandMark";
-import { ChatInputBar } from "../components/ChatInputBar";
-import { ManualEntryForm } from "../components/ManualEntryForm";
-import { SpendingAlertCards } from "../components/SpendingAlertCards";
-import { TransactionTable } from "../components/TransactionTable";
 import { useAuth } from "../context/AuthContext";
+import { useBusiness } from "../context/BusinessContext";
 import { useTheme } from "../context/ThemeContext";
-import { useBudgets } from "../hooks/useBudgets";
-import { useChatExpense } from "../hooks/useChatExpense";
-import { useTransactions } from "../hooks/useTransactions";
 import { formatMoney } from "../lib/currency";
-import { computeSpendingAlerts } from "../lib/spendingAlerts";
 import type { ThemeColors } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
-import type { Transaction, TransactionType } from "../types";
-
-type EntryMode = "chat" | "ask" | "manual";
 
 export function HomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { profile } = useAuth();
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  const { dashboard, weekly, debtors, syncStatusLine, flushSyncQueue, business } = useBusiness();
   const currency = profile?.preferred_currency ?? "NGN";
-
-  const {
-    transactions,
-    addTransactions,
-    createManualTransaction,
-    isOnline,
-    pendingSyncCount,
-  } = useTransactions();
-  const budgets = useBudgets(year, month);
-  const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
-  const [mode, setMode] = useState<EntryMode>("chat");
-  const [manualBusy, setManualBusy] = useState(false);
-  const [micListening, setMicListening] = useState(false);
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(
-    () => new Set(),
-  );
-
-  const onCreated = useCallback(
-    (rows: Transaction[]) => {
-      addTransactions(rows);
-      setHighlightIds(new Set(rows.map((r) => r.id)));
-    },
-    [addTransactions],
-  );
-
-  const askContext = useMemo(
-    () => ({
-      currency,
-      incomeTotal: budgets.incomeTotal,
-      totalBudget: budgets.totalBudget,
-      totalActual: budgets.totalActual,
-      remaining: budgets.remaining,
-      budgetRows: budgets.rows,
-      expenseCategories: budgets.expenseCategories,
-    }),
-    [
-      currency,
-      budgets.incomeTotal,
-      budgets.totalBudget,
-      budgets.totalActual,
-      budgets.remaining,
-      budgets.rows,
-      budgets.expenseCategories,
-    ],
-  );
-
-  const { send, sending, feed } = useChatExpense(
-    onCreated,
-    budgets.expenseCategories,
-    transactions,
-    askContext,
-  );
-
-  const alerts = useMemo(() => {
-    const all = computeSpendingAlerts(budgets.rows, currency);
-    return all.filter((a) => !dismissedAlerts.has(a.id));
-  }, [budgets.rows, currency, dismissedAlerts]);
-
-  const expiresLabel = useMemo(() => {
-    if (!profile?.subscription_expires_at) return null;
-    const d = new Date(profile.subscription_expires_at);
-    return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
-  }, [profile?.subscription_expires_at]);
-
-  const submitManual = async (input: {
-    amount: number;
-    type: TransactionType;
-    category: string;
-    merchant: string;
-    payment_method: string;
-    notes: string;
-  }) => {
-    setManualBusy(true);
-    try {
-      const tx = await createManualTransaction(input);
-      setHighlightIds(new Set([tx.id]));
-    } finally {
-      setManualBusy(false);
-    }
-  };
+  const openDebtors = debtors.filter((d) => d.status !== "paid");
+  const profitColor = dashboard.estimatedProfit >= 0 ? colors.income : colors.danger;
+  const trend =
+    weekly.todaySales > 0
+      ? Math.round(((dashboard.todaySales - weekly.todaySales / 7) / (weekly.todaySales / 7 || 1)) * 100)
+      : 0;
 
   return (
-    <View style={styles.root}>
-      <LinearGradient
-        colors={colors.gradient}
-        style={StyleSheet.absoluteFill}
-      />
-      <StatusBar style={colors.statusBar} />
-      <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-        <View style={styles.topBar}>
-          <View style={styles.brandSlot}>
-            <BrandMark size={44} />
-          </View>
-          <View style={styles.actions}>
-            <Pressable
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate("QuickTips")}
-            >
-              <Lightbulb size={18} color={colors.mist} />
+    <LinearGradient colors={colors.gradient} style={styles.root}>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <StatusBar style={colors.statusBar} />
+        <View style={styles.top}>
+          <BrandMark size={44} showWordmark />
+          <View style={styles.icons}>
+            <Pressable onPress={() => navigation.navigate("QuickTips")} style={styles.iconBtn}>
+              <Lightbulb size={20} color={colors.mist} />
             </Pressable>
-            <Pressable
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate("Summary")}
-            >
-              <LayoutDashboard size={18} color={colors.mist} />
+            <Pressable onPress={() => navigation.navigate("Debtors")} style={styles.iconBtn}>
+              <Users size={20} color={colors.mist} />
             </Pressable>
-            <Pressable
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate("Budget")}
-            >
-              <PieChart size={18} color={colors.mist} />
+            <Pressable onPress={() => navigation.navigate("Ledger")} style={styles.iconBtn}>
+              <BookOpen size={20} color={colors.mist} />
             </Pressable>
-            <Pressable
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate("Ledger")}
-            >
-              <BookOpen size={18} color={colors.mist} />
-            </Pressable>
-            <Pressable
-              style={styles.iconBtn}
-              onPress={() => navigation.navigate("Settings")}
-            >
-              <Settings size={18} color={colors.mist} />
+            <Pressable onPress={() => navigation.navigate("Settings")} style={styles.iconBtn}>
+              <Settings size={20} color={colors.mist} />
             </Pressable>
           </View>
         </View>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.biz}>{business?.business_name || "Your business"}</Text>
+          {syncStatusLine ? (
+            <Pressable onPress={() => void flushSyncQueue()}>
+              <Text style={styles.sync}>{syncStatusLine}</Text>
+            </Pressable>
+          ) : null}
 
-        {expiresLabel ? (
-          <Text style={styles.chip}>
-            Pro · {profile?.subscription_period} · {expiresLabel}
-          </Text>
-        ) : null}
-
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          scrollEnabled={!micListening}
-        >
-          <Pressable
-            style={styles.summary}
-            onPress={() => navigation.navigate("Budget")}
-          >
-            <Text style={styles.summaryLabel}>This month · tap for budget</Text>
-            <Text style={styles.summaryValue}>
-              {formatMoney(budgets.totalActual, currency)}
+          <View style={styles.card}>
+            <Text style={styles.label}>Today&apos;s sales</Text>
+            <Text style={styles.hero}>{formatMoney(dashboard.todaySales, currency)}</Text>
+            <Text style={styles.meta}>
+              {dashboard.salesCount} sale{dashboard.salesCount === 1 ? "" : "s"}
+              {trend ? ` · ${trend > 0 ? "+" : ""}${trend}% vs daily avg` : ""}
             </Text>
-            <Text style={styles.summaryMeta}>
-              {formatMoney(Math.max(budgets.remaining, 0), currency)} left of{" "}
-              {formatMoney(budgets.totalBudget, currency)} budget
-              {budgets.incomeTotal > 0
-                ? ` · Income ${formatMoney(budgets.incomeTotal, currency)}`
-                : ""}
-            </Text>
-          </Pressable>
-
-          <View style={styles.alertsSlot}>
-            <SpendingAlertCards
-              alerts={alerts}
-              onPress={() => navigation.navigate("Budget")}
-              onDismiss={(id) =>
-                setDismissedAlerts((prev) => new Set(prev).add(id))
-              }
-            />
           </View>
-
-          <View style={styles.modeRow}>
-            <Pressable
-              style={[styles.modeBtn, mode === "chat" && styles.modeActive]}
-              onPress={() => setMode("chat")}
-            >
-              <Text style={[styles.modeText, mode === "chat" && styles.modeTextActive]}>
-                Chat
+          <View style={styles.row}>
+            <View style={[styles.card, styles.half]}>
+              <Text style={styles.label}>Today&apos;s expenses</Text>
+              <Text style={[styles.mid, { color: colors.danger }]}>
+                {formatMoney(dashboard.todayExpenses, currency)}
               </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modeBtn, mode === "ask" && styles.modeActive]}
-              onPress={() => setMode("ask")}
-            >
-              <Text style={[styles.modeText, mode === "ask" && styles.modeTextActive]}>
-                Ask
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.modeBtn, mode === "manual" && styles.modeActive]}
-              onPress={() => setMode("manual")}
-            >
-              <Text style={[styles.modeText, mode === "manual" && styles.modeTextActive]}>
-                Manual
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.onlineHint}>
-            {isOnline
-              ? pendingSyncCount > 0
-                ? `Online · syncing ${pendingSyncCount} change${pendingSyncCount === 1 ? "" : "s"}…`
-                : "Online"
-              : "Offline · Manual entry works · Chat/Ask need internet"}
-          </Text>
-
-          {mode === "manual" ? (
-            <View style={styles.entryBlock}>
-              <ManualEntryForm
-                currency={currency}
-                expenseCategories={budgets.expenseCategories}
-                submitting={manualBusy}
-                onSubmit={(input) => void submitManual(input)}
-              />
             </View>
+            <View style={[styles.card, styles.half]}>
+              <Text style={styles.label}>Estimated profit</Text>
+              <Text style={[styles.mid, { color: profitColor }]}>
+                {formatMoney(dashboard.estimatedProfit, currency)}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.actions}>
+            <Pressable style={styles.primary} onPress={() => navigation.navigate("AddSale")}>
+              <Text style={styles.primaryText}>Record sale</Text>
+            </Pressable>
+            <Pressable style={styles.secondary} onPress={() => navigation.navigate("AddExpense")}>
+              <Text style={styles.secondaryText}>Record expense</Text>
+            </Pressable>
+          </View>
+
+          {openDebtors.length > 0 ? (
+            <Pressable style={styles.alert} onPress={() => navigation.navigate("Debtors")}>
+              <Text style={styles.alertText}>
+                {openDebtors.length} open debtor{openDebtors.length === 1 ? "" : "s"} — tap to collect
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Text style={styles.section}>Recent</Text>
+          {dashboard.recentTransactions.length === 0 ? (
+            <Text style={styles.empty}>No sales or expenses yet. Record your first one.</Text>
           ) : (
-            <View style={styles.entryBlock}>
-              {feed.length ? (
-                <View style={styles.feed}>
-                  {feed.slice(-3).map((item) => (
-                    <Text
-                      key={item.id}
-                      style={[
-                        styles.feedText,
-                        item.role === "user" && styles.feedUser,
-                      ]}
-                      numberOfLines={3}
-                    >
-                      {item.role === "user" ? "You · " : "FINPA · "}
-                      {item.text}
-                    </Text>
-                  ))}
-                </View>
-              ) : (
-                <Pressable onPress={() => navigation.navigate("QuickTips")}>
-                  <Text style={styles.entryHint}>
-                    {mode === "ask"
-                      ? "Try: “Can I afford ₦80,000 shoes?” · Quick tips →"
-                      : "Try: “Spent 4500 on fuel” · Quick tips →"}
+            dashboard.recentTransactions.map((item) => (
+              <View key={`${item.kind}-${item.id}`} style={styles.tx}>
+                <View>
+                  <Text style={styles.txTitle}>{item.title}</Text>
+                  <Text style={styles.txMeta}>
+                    {item.kind === "sale" ? "Sale" : "Expense"} · {item.payment_method}
                   </Text>
-                </Pressable>
-              )}
-              <ChatInputBar
-                onSend={(msg) =>
-                  void send(msg, { askOnly: mode === "ask" })
-                }
-                sending={sending}
-                disabled={!isOnline}
-                disabledHint="Offline — switch to Manual to log expenses"
-                embedded
-                onListeningChange={setMicListening}
-              />
-            </View>
+                </View>
+                <Text
+                  style={[
+                    styles.txAmt,
+                    { color: item.kind === "sale" ? colors.income : colors.danger },
+                  ]}
+                >
+                  {item.kind === "sale" ? "+" : "-"}
+                  {formatMoney(item.amount, currency)}
+                </Text>
+              </View>
+            ))
           )}
-
-          <View style={styles.recentHeader}>
-            <Text style={styles.section}>Recent</Text>
-            <Pressable onPress={() => navigation.navigate("Ledger")}>
-              <Text style={styles.seeAll}>Full ledger</Text>
-            </Pressable>
-          </View>
-          <TransactionTable
-            transactions={transactions}
-            limit={12}
-            highlightIds={highlightIds}
-          />
         </ScrollView>
       </SafeAreaView>
-    </View>
+    </LinearGradient>
   );
 }
 
 function createStyles(c: ThemeColors) {
   return StyleSheet.create({
-    root: { flex: 1, backgroundColor: c.ink },
+    root: { flex: 1 },
     safe: { flex: 1 },
-    topBar: {
-      paddingHorizontal: 16,
-      paddingTop: 4,
+    top: {
       flexDirection: "row",
-      alignItems: "center",
       justifyContent: "space-between",
-      gap: 8,
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingBottom: 8,
     },
-    brandSlot: {
-      flexShrink: 1,
-    },
-    actions: {
-      flexDirection: "row",
-      flexShrink: 0,
-      gap: 4,
-    },
+    icons: { flexDirection: "row", gap: 6 },
     iconBtn: {
-      width: 34,
-      height: 34,
-      borderRadius: 17,
+      width: 36,
+      height: 36,
+      borderRadius: 12,
+      backgroundColor: c.iconBtnBg,
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: c.iconBtnBg,
     },
-    chip: {
-      marginTop: 10,
-      marginHorizontal: 20,
-      alignSelf: "flex-start",
-      color: c.sage,
-      fontFamily: "DMSans_500Medium",
-      fontSize: 12,
-    },
-    scroll: { flex: 1 },
-    scrollContent: {
-      paddingHorizontal: 20,
-      paddingBottom: 28,
-    },
-    summary: {
-      marginTop: 18,
-    },
-    summaryLabel: {
-      color: c.mistMuted,
-      fontFamily: "DMSans_400Regular",
-      fontSize: 13,
-    },
-    summaryValue: {
-      marginTop: 4,
-      color: c.mist,
-      fontFamily: "Fraunces_600SemiBold",
-      fontSize: 36,
-    },
-    summaryMeta: {
-      marginTop: 6,
-      color: c.mistMuted,
-      fontFamily: "DMSans_400Regular",
-      fontSize: 13,
-      lineHeight: 19,
-    },
-    alertsSlot: {
-      marginTop: 16,
-    },
-    onlineHint: {
-      marginTop: 8,
-      color: c.mistMuted,
-      fontFamily: "DMSans_400Regular",
-      fontSize: 11,
-    },
-    modeRow: {
-      marginTop: 20,
-      flexDirection: "row",
-      gap: 8,
+    content: { padding: 16, paddingBottom: 48, gap: 12 },
+    biz: { color: c.mistMuted, fontFamily: "DMSans_500Medium", fontSize: 14 },
+    sync: { color: c.sageBright, fontFamily: "DMSans_400Regular", fontSize: 13 },
+    card: {
       backgroundColor: c.inkCard,
-      borderRadius: 14,
-      padding: 4,
+      borderRadius: 18,
+      padding: 16,
       borderWidth: 1,
       borderColor: c.line,
     },
-    modeBtn: {
+    row: { flexDirection: "row", gap: 10 },
+    half: { flex: 1 },
+    label: { color: c.mistMuted, fontFamily: "DMSans_500Medium", fontSize: 13 },
+    hero: { color: c.mist, fontFamily: "Fraunces_600SemiBold", fontSize: 36, marginTop: 4 },
+    mid: { fontFamily: "Fraunces_600SemiBold", fontSize: 24, marginTop: 6 },
+    meta: { color: c.mistMuted, marginTop: 6, fontFamily: "DMSans_400Regular" },
+    actions: { flexDirection: "row", gap: 10, marginTop: 4 },
+    primary: {
       flex: 1,
-      paddingVertical: 10,
-      borderRadius: 11,
+      backgroundColor: c.teal,
+      borderRadius: 14,
+      paddingVertical: 14,
       alignItems: "center",
     },
-    modeActive: {
-      backgroundColor: c.modeActive,
+    primaryText: { color: "#fff", fontFamily: "DMSans_700Bold" },
+    secondary: {
+      flex: 1,
+      backgroundColor: c.inkCard,
+      borderRadius: 14,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: c.line,
     },
-    modeText: {
-      color: c.mistMuted,
-      fontFamily: "DMSans_500Medium",
-      fontSize: 14,
+    secondaryText: { color: c.mist, fontFamily: "DMSans_700Bold" },
+    alert: {
+      backgroundColor: c.warnBg,
+      borderColor: c.warnBorder,
+      borderWidth: 1,
+      borderRadius: 14,
+      padding: 12,
     },
-    modeTextActive: {
-      color: c.mist,
-    },
-    entryBlock: {
-      marginTop: 14,
-    },
-    entryHint: {
-      color: c.mistMuted,
-      fontFamily: "DMSans_400Regular",
-      fontSize: 13,
-      marginBottom: 8,
-      lineHeight: 19,
-    },
-    feed: {
-      marginBottom: 8,
-      gap: 4,
-    },
-    feedText: {
-      color: c.sageBright,
-      fontFamily: "DMSans_400Regular",
-      fontSize: 12,
-    },
-    feedUser: {
-      color: c.mistMuted,
-    },
-    recentHeader: {
-      marginTop: 28,
-      marginBottom: 4,
-      flexDirection: "row",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
-    },
+    alertText: { color: c.mist, fontFamily: "DMSans_500Medium" },
     section: {
       color: c.mist,
       fontFamily: "Fraunces_600SemiBold",
       fontSize: 22,
+      marginTop: 8,
     },
-    seeAll: {
-      color: c.sageBright,
-      fontFamily: "DMSans_500Medium",
-      fontSize: 13,
-      marginBottom: 2,
+    empty: { color: c.mistMuted, fontFamily: "DMSans_400Regular" },
+    tx: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: c.inkCard,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: c.line,
     },
+    txTitle: { color: c.mist, fontFamily: "DMSans_500Medium", fontSize: 15 },
+    txMeta: { color: c.mistMuted, fontFamily: "DMSans_400Regular", fontSize: 12, marginTop: 2 },
+    txAmt: { fontFamily: "DMSans_700Bold", fontSize: 15 },
   });
 }

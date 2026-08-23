@@ -1,17 +1,17 @@
 {
-  "name": "finpa",
+  "name": "finpa-business",
   "private": true,
   "workspaces": [
     "apps/*"
   ],
   "scripts": {
-    "dev:backend": "npm run dev --workspace=@finpa/backend",
-    "dev:mobile": "npm run start --workspace=@finpa/mobile",
-    "generate-pins": "npm run generate-pins --workspace=@finpa/backend",
-    "build:backend": "npm run build --workspace=@finpa/backend",
+    "dev:backend": "npm run dev --workspace=@finpa-business/backend",
+    "dev:mobile": "npm run start --workspace=@finpa-business/mobile",
+    "generate-pins": "npm run generate-pins --workspace=@finpa-business/backend",
+    "build:backend": "npm run build --workspace=@finpa-business/backend",
     "test": "jest --config apps/backend/jest.config.js",
-    "eas:login": "npm run eas:login --workspace=@finpa/mobile",
-    "eas:build:apk": "npm run eas:build:apk --workspace=@finpa/mobile",
+    "eas:login": "npm run eas:login --workspace=@finpa-business/mobile",
+    "eas:build:apk": "npm run eas:build:apk --workspace=@finpa-business/mobile",
     "supabase:check": "node scripts/check-supabase.mjs"
   },
   "engines": {

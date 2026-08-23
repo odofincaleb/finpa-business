@@ -1,4 +1,4 @@
-const DEFAULT_AUTH_REDIRECT_URL = "finpa://auth/callback";
+const DEFAULT_AUTH_REDIRECT_URL = "finpa-business://auth/callback";
 
 export function getAuthRedirectUrl() {
   return (

@@ -3,19 +3,24 @@ import cors from "cors";
 import aiRoutes from "./routes/ai.routes";
 import meRoutes from "./routes/me.routes";
 import pinsRoutes from "./routes/pins.routes";
-import budgetsRoutes from "./routes/budgets.routes";
 import adminPinsRoutes from "./routes/adminPins.routes";
-import transactionsRoutes from "./routes/transactions.routes";
 import checkoutRoutes from "./routes/checkout.routes";
+import businessRouter from "./routes/business.routes";
+import salesRouter from "./routes/sales.routes";
+import expensesRouter from "./routes/expenses.routes";
+import debtorsRouter from "./routes/debtors.routes";
+import dashboardRouter from "./routes/dashboard.routes";
 import { AppError } from "./lib/errors";
 import { hasSupabase } from "./lib/supabase";
+import { hasDatabase } from "./lib/pg";
 import { parseSuperAdminEmails } from "./middleware/auth";
 
 export function healthPayload() {
   return {
     ok: true,
-    service: "finpa-backend",
+    service: "finpa-business-backend",
     supabase: hasSupabase(),
+    postgres: hasDatabase(),
     openrouter: Boolean(process.env.OPENROUTER_API_KEY),
     superadmins: parseSuperAdminEmails().length,
   };
@@ -44,10 +49,13 @@ export function createApp() {
 
   app.use("/api/me", meRoutes);
   app.use("/api/pins", pinsRoutes);
-  app.use("/api/budgets", budgetsRoutes);
   app.use("/api/admin/pins", adminPinsRoutes);
-  app.use("/api/transactions", transactionsRoutes);
   app.use("/api/checkout", checkoutRoutes);
+  app.use("/api/business/profile", businessRouter);
+  app.use("/api/business/sales", salesRouter);
+  app.use("/api/business/expenses", expensesRouter);
+  app.use("/api/business/debtors", debtorsRouter);
+  app.use("/api/business/dashboard", dashboardRouter);
   app.use("/api", aiRoutes);
 
   app.use(

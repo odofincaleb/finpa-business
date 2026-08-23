@@ -8,6 +8,7 @@ loadEnv({ path: path.resolve(process.cwd(), ".env") });
 
 import { createApp } from "./app";
 import { hasSupabase } from "./lib/supabase";
+import { hasDatabase } from "./lib/pg";
 import { allowDemoPins } from "./lib/securePin";
 import { parseSuperAdminEmails } from "./middleware/auth";
 import { memorySeedDemoPin } from "./services/memoryStore";
@@ -16,7 +17,7 @@ const app = createApp();
 const port = Number(process.env.PORT || 3001);
 
 app.listen(port, "0.0.0.0", () => {
-  console.log(`FINPA backend listening on http://0.0.0.0:${port}`);
+  console.log(`FINPA Business backend listening on http://0.0.0.0:${port}`);
   console.log("[finpa-env-check]", {
     paystackSecretPresent: Boolean(process.env.PAYSTACK_SECRET_KEY),
     paystackSecretLength: process.env.PAYSTACK_SECRET_KEY?.length || 0,
@@ -24,28 +25,28 @@ app.listen(port, "0.0.0.0", () => {
     routerSecretLength: process.env.FINPA_PAYSTACK_ROUTER_SECRET?.length || 0,
     callbackUrlPresent: Boolean(process.env.FINPA_PAYSTACK_CALLBACK_URL),
   });
-  if (!hasSupabase()) {
+  if (!hasDatabase()) {
     memorySeedDemoPin();
     console.warn(
-      "[finpa] Supabase not configured — using in-memory store. Auth: Bearer dev:<userId>:<email>",
+      "[finpa-business] DATABASE_URL/Supabase data not configured — using in-memory store. Auth: Bearer dev:<userId>:<email>",
     );
     if (allowDemoPins()) {
-      console.warn("[finpa] Demo PIN (memory mode): FINPA-DEMO-0001");
+      console.warn("[finpa-business] Demo PIN (memory mode): FINPA-DEMO-0001");
     } else {
       console.warn(
-        "[finpa] Demo PINs disabled (ALLOW_DEMO_PINS!=true). Generate PINs via admin API.",
+        "[finpa-business] Demo PINs disabled (ALLOW_DEMO_PINS!=true). Generate PINs via admin API.",
       );
     }
   }
   if (!process.env.OPENROUTER_API_KEY) {
-    console.warn("[finpa] OPENROUTER_API_KEY missing — AI routes will fail until set.");
+    console.warn("[finpa-business] OPENROUTER_API_KEY missing — AI routes will fail until set.");
   }
   const admins = parseSuperAdminEmails();
   if (admins.length) {
-    console.log(`[finpa] Super admins: ${admins.join(", ")}`);
+    console.log(`[finpa-business] Super admins: ${admins.join(", ")}`);
   } else {
     console.warn(
-      "[finpa] SUPERADMIN_EMAILS unset — in-app PIN admin disabled (x-admin-secret still works).",
+      "[finpa-business] SUPERADMIN_EMAILS unset — in-app PIN admin disabled (x-admin-secret still works).",
     );
   }
 });

@@ -1,5 +1,5 @@
 {
-  "name": "@finpa/mobile",
+  "name": "@finpa-business/mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {

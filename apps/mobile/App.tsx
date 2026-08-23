@@ -18,17 +18,20 @@ import {
   DMSans_700Bold,
 } from "@expo-google-fonts/dm-sans";
 import { AuthProvider, useAuth } from "./src/context/AuthContext";
-import { FinanceProvider } from "./src/context/FinanceContext";
+import { BusinessProvider } from "./src/context/BusinessContext";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
 import { AuthScreen } from "./src/screens/AuthScreen";
 import { ActivatePinScreen } from "./src/screens/ActivatePinScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
-import { BudgetScreen } from "./src/screens/BudgetScreen";
 import { LedgerScreen } from "./src/screens/LedgerScreen";
 import { SummaryScreen } from "./src/screens/SummaryScreen";
 import { QuickTipsScreen } from "./src/screens/QuickTipsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { AdminPinsScreen } from "./src/screens/AdminPinsScreen";
+import { AddSaleScreen } from "./src/screens/AddSaleScreen";
+import { AddExpenseScreen } from "./src/screens/AddExpenseScreen";
+import { DebtorsScreen } from "./src/screens/DebtorsScreen";
+import { DebtorDetailScreen } from "./src/screens/DebtorDetailScreen";
 import type { RootStackParamList } from "./src/navigation/types";
 import { darkColors } from "./src/theme/colors";
 
@@ -45,14 +48,14 @@ class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("FINPA crash:", error, info.componentStack);
+    console.error("FINPA Business crash:", error, info.componentStack);
   }
 
   render() {
     if (this.state.error) {
       return (
         <View style={bootStyles.errorBox}>
-          <Text style={bootStyles.errorTitle}>FINPA hit an error</Text>
+          <Text style={bootStyles.errorTitle}>FINPA Business hit an error</Text>
           <Text style={bootStyles.errorBody}>{String(this.state.error.message)}</Text>
         </View>
       );
@@ -77,7 +80,7 @@ function RootNavigator() {
   if (!subscriptionActive && !isSuperAdmin) return <ActivatePinScreen />;
 
   return (
-    <FinanceProvider>
+    <BusinessProvider>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -85,14 +88,17 @@ function RootNavigator() {
         }}
       >
         <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Budget" component={BudgetScreen} />
         <Stack.Screen name="Ledger" component={LedgerScreen} />
         <Stack.Screen name="Summary" component={SummaryScreen} />
         <Stack.Screen name="QuickTips" component={QuickTipsScreen} />
         <Stack.Screen name="AdminPins" component={AdminPinsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="AddSale" component={AddSaleScreen} />
+        <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
+        <Stack.Screen name="Debtors" component={DebtorsScreen} />
+        <Stack.Screen name="DebtorDetail" component={DebtorDetailScreen} />
       </Stack.Navigator>
-    </FinanceProvider>
+    </BusinessProvider>
   );
 }
 
