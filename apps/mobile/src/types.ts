@@ -121,3 +121,58 @@ export interface ChatFeedItem {
   role: "user" | "assistant";
   text: string;
 }
+
+export type ReportRange = "daily" | "weekly" | "monthly";
+
+export type DailyReport = {
+  date: string;
+  sales: {
+    total: number;
+    count: number;
+    byMethod: { cash: number; pos: number; transfer: number; credit: number };
+  };
+  expenses: { total: number; count: number; byCategory: Record<string, number> };
+  profit: number;
+  topItems: Array<{ item: string; amount: number }>;
+  debtors: { new: number; collected: number; open: number; openTotal: number };
+};
+
+export type WeeklyReport = {
+  startDate: string;
+  endDate: string;
+  totalSales: number;
+  totalExpenses: number;
+  totalProfit: number;
+  dailyBreakdown: Array<{ date: string; sales: number; expenses: number; profit: number }>;
+  bestDay: { date: string; sales: number; profit: number };
+  avgDailySales: number;
+  avgDailyProfit: number;
+};
+
+export type MonthlyReport = {
+  year: number;
+  month: number;
+  monthName: string;
+  totalSales: number;
+  totalExpenses: number;
+  totalProfit: number;
+  profitMargin: number;
+  weeklyBreakdown: Array<{
+    startDate: string;
+    endDate: string;
+    sales: number;
+    expenses: number;
+    profit: number;
+  }>;
+  topExpenseCategories: Array<{ category: string; total: number; pct: number }>;
+  topSellingItems: Array<{ item: string; quantity: number; revenue: number }>;
+};
+
+export type ExportData = {
+  type: ReportRange;
+  csv: string;
+  shareText: string;
+  daily?: DailyReport;
+  weekly?: WeeklyReport;
+  monthly?: MonthlyReport;
+};

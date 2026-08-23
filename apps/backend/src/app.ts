@@ -11,6 +11,7 @@ import expensesRouter from "./routes/expenses.routes";
 import debtorsRouter from "./routes/debtors.routes";
 import dashboardRouter from "./routes/dashboard.routes";
 import chatRouter from "./routes/chat.routes";
+import reportsRouter, { exportRouter } from "./routes/reports.routes";
 import { AppError } from "./lib/errors";
 import { hasSupabase } from "./lib/supabase";
 import { hasDatabase } from "./lib/pg";
@@ -58,6 +59,8 @@ export function createApp() {
   app.use("/api/business/expenses", expensesRouter);
   app.use("/api/business/debtors", debtorsRouter);
   app.use("/api/business/dashboard", dashboardRouter);
+  app.use("/api/business/reports", reportsRouter);
+  app.use("/api/business/export", exportRouter);
   app.use("/api", aiRoutes);
 
   app.use(

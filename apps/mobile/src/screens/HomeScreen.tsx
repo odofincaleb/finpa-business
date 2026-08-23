@@ -156,6 +156,9 @@ export function HomeScreen() {
               <Text style={styles.secondaryText}>📊 Record Expense</Text>
             </Pressable>
           </View>
+          <Pressable style={styles.reportsBtn} onPress={() => navigation.navigate("Reports")}>
+            <Text style={styles.reportsText}>📊 Reports</Text>
+          </Pressable>
 
           {openDebtors.length > 0 ? (
             <Pressable style={styles.alert} onPress={() => navigation.navigate("Debtors")}>
@@ -275,6 +278,15 @@ function createStyles(c: ThemeColors) {
       borderColor: c.line,
     },
     secondaryText: { color: c.mist, fontFamily: "DMSans_700Bold", fontSize: 15 },
+    reportsBtn: {
+      backgroundColor: c.inkCard,
+      borderRadius: 14,
+      paddingVertical: 14,
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: c.line,
+    },
+    reportsText: { color: c.mist, fontFamily: "DMSans_700Bold", fontSize: 15 },
     alert: {
       backgroundColor: c.warnBg,
       borderColor: c.warnBorder,

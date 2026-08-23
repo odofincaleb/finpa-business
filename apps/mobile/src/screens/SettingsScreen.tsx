@@ -70,9 +70,16 @@ export function SettingsScreen() {
         <View style={styles.list}>
           <Pressable
             style={styles.row}
+            onPress={() => navigation.navigate("Reports")}
+          >
+            <Text style={styles.rowText}>📊 Reports &amp; CSV export</Text>
+            <Text style={styles.check}>Open</Text>
+          </Pressable>
+          <Pressable
+            style={styles.row}
             onPress={() => navigation.navigate("Summary")}
           >
-            <Text style={styles.rowText}>Monthly summary</Text>
+            <Text style={styles.rowText}>P&amp;L summary</Text>
             <Text style={styles.check}>Open</Text>
           </Pressable>
           <Pressable

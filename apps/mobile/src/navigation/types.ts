@@ -2,6 +2,7 @@ export type RootStackParamList = {
   Home: undefined;
   Ledger: undefined;
   Summary: undefined;
+  Reports: undefined;
   QuickTips: undefined;
   AdminPins: undefined;
   Settings: undefined;

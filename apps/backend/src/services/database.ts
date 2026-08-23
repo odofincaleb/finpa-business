@@ -336,4 +336,12 @@ export async function getDashboard(
   return memoryDashboard(userId, range);
 }
 
+export {
+  getDailyReport,
+  getWeeklyReport,
+  getMonthlyReport,
+  getExportCsv,
+  getExportData,
+} from "./reports";
+
 export type { CurrencyCode } from "../types/transaction";

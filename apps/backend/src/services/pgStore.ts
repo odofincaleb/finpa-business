@@ -928,3 +928,31 @@ export async function pgDashboard(
     recentTransactions: recent,
   };
 }
+
+export async function pgLoadReportData(userId: string): Promise<{
+  sales: SaleRecord[];
+  expenses: ExpenseRecord[];
+  debtors: DebtorRecord[];
+  payments: DebtorPayment[];
+}> {
+  const biz = await pgGetBusinessForOwner(userId);
+  if (!biz) return { sales: [], expenses: [], debtors: [], payments: [] };
+  const pool = getPool();
+  const [saleRes, expRes, debtorRes, payRes] = await Promise.all([
+    pool.query(`SELECT * FROM sale_transactions WHERE business_id = $1`, [biz.id]),
+    pool.query(`SELECT * FROM expense_transactions WHERE business_id = $1`, [biz.id]),
+    pool.query(`SELECT * FROM debtors WHERE business_id = $1`, [biz.id]),
+    pool.query(
+      `SELECT p.* FROM debtor_payments p
+       JOIN debtors d ON d.id = p.debtor_id
+       WHERE d.business_id = $1`,
+      [biz.id],
+    ),
+  ]);
+  return {
+    sales: saleRes.rows.map(mapSale),
+    expenses: expRes.rows.map(mapExpense),
+    debtors: debtorRes.rows.map(mapDebtor),
+    payments: payRes.rows.map(mapPayment),
+  };
+}

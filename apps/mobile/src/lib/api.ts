@@ -1,13 +1,18 @@
 import type {
   BusinessProfile,
   CurrencyCode,
+  DailyReport,
   DashboardSummary,
   Debtor,
   DebtorPayment,
   Expense,
   ExpenseCategory,
+  ExportData,
+  MonthlyReport,
   Profile,
+  ReportRange,
   Sale,
+  WeeklyReport,
 } from "../types";
 import { showDevUi } from "./env";
 
@@ -332,4 +337,74 @@ export async function sendBusinessChat(token: string, message: string, categorie
     token,
     body: JSON.stringify({ message, categories }),
   });
+}
+
+function exportQuery(type: ReportRange, date?: string, year?: number, month?: number) {
+  const q = new URLSearchParams({ type });
+  if (date) q.set("date", date);
+  if (year) q.set("year", String(year));
+  if (month) q.set("month", String(month));
+  return q.toString();
+}
+
+export async function fetchDailyReport(token: string, date?: string) {
+  const q = date ? `?date=${encodeURIComponent(date)}` : "";
+  return request<DailyReport>(`/api/business/reports/daily${q}`, { token });
+}
+
+export async function fetchWeeklyReport(token: string, end?: string) {
+  const q = end ? `?end=${encodeURIComponent(end)}` : "";
+  return request<WeeklyReport>(`/api/business/reports/weekly${q}`, { token });
+}
+
+export async function fetchMonthlyReport(token: string, year: number, month: number) {
+  return request<MonthlyReport>(
+    `/api/business/reports/monthly?year=${year}&month=${month}`,
+    { token },
+  );
+}
+
+export async function fetchExportData(
+  token: string,
+  type: ReportRange,
+  date?: string,
+  year?: number,
+  month?: number,
+) {
+  return request<ExportData>(`/api/business/export/data?${exportQuery(type, date, year, month)}`, {
+    token,
+  });
+}
+
+export async function fetchExportCsv(
+  token: string,
+  type: ReportRange,
+  date?: string,
+  year?: number,
+  month?: number,
+): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  try {
+    const res = await fetch(`${API_URL}/api/business/export/csv?${exportQuery(type, date, year, month)}`, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Bypass-Tunnel-Reminder": "true",
+      },
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new ApiError(res.status, "INTERNAL", text || `Request failed (${res.status})`);
+    }
+    return text;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    if ((err as Error).name === "AbortError") {
+      throw new ApiError(504, "UPSTREAM_TIMEOUT", "Request timed out. Try again.");
+    }
+    throw new ApiError(0, "NETWORK", networkErrorMessage());
+  } finally {
+    clearTimeout(timer);
+  }
 }

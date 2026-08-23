@@ -342,6 +342,23 @@ export function memoryDeleteDebtor(userId: string, id: string): void {
   payments.delete(id);
 }
 
+export function memoryLoadReportData(userId: string): {
+  sales: SaleRecord[];
+  expenses: ExpenseRecord[];
+  debtors: DebtorRecord[];
+  payments: DebtorPayment[];
+} {
+  const biz = memoryGetBusinessForOwner(userId);
+  if (!biz) return { sales: [], expenses: [], debtors: [], payments: [] };
+  const bizDebtors = debtors.get(biz.id) ?? [];
+  return {
+    sales: sales.get(biz.id) ?? [],
+    expenses: expenses.get(biz.id) ?? [],
+    debtors: bizDebtors,
+    payments: bizDebtors.flatMap((d) => payments.get(d.id) ?? []),
+  };
+}
+
 export function memoryDashboard(
   userId: string,
   range: "today" | "weekly" | "monthly",

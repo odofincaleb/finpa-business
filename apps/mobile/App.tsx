@@ -25,6 +25,7 @@ import { ActivatePinScreen } from "./src/screens/ActivatePinScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { LedgerScreen } from "./src/screens/LedgerScreen";
 import { SummaryScreen } from "./src/screens/SummaryScreen";
+import { ReportsScreen } from "./src/screens/ReportsScreen";
 import { QuickTipsScreen } from "./src/screens/QuickTipsScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { AdminPinsScreen } from "./src/screens/AdminPinsScreen";
@@ -90,6 +91,7 @@ function RootNavigator() {
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Ledger" component={LedgerScreen} />
         <Stack.Screen name="Summary" component={SummaryScreen} />
+        <Stack.Screen name="Reports" component={ReportsScreen} />
         <Stack.Screen name="QuickTips" component={QuickTipsScreen} />
         <Stack.Screen name="AdminPins" component={AdminPinsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
